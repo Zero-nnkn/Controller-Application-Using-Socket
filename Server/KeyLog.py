@@ -241,7 +241,3 @@ def startKlog():
             return
     kh.unistallHookProc()
 
-import time
-
-#tk = threading.Thread(target=startKlog)
-#tk.start()
