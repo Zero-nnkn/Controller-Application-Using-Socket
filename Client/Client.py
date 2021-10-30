@@ -1,15 +1,9 @@
 import socket
 import tkinter as tk
 from tkinter import messagebox
-from tkinter import filedialog
-from tkinter import ttk
 from tkinter import END,INSERT
-from PIL import Image
-from PIL import ImageTk
-import json
-import os
 
-import processRunning
+import ProcessRunning
 import AppRunning
 import ScreenShot
 import KeyStroke
@@ -53,17 +47,18 @@ class Client(tk.Frame):
             messagebox.showinfo("Error", "Not connected to the server")
 
     def butProcessClick(self):
-        if not self.checkConnected():
-           return
+        # if not self.checkConnected():
+        #    return
         s = "PROCESS"
-        clientSocket.send(s.encode('utf-8'))
+        # clientSocket.send(s.encode('utf-8'))
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
-        pr = processRunning.ProcessRunning(clientSocket)
+        pr = ProcessRunning.ProcessRunning(clientSocket, root)
         s = "Process Running"
         pr.master.title(s)
         pr.master.minsize(290, 240)
+        pr.mainloop()
         
     def butAppClick(self):
         if not self.checkConnected():
@@ -73,7 +68,7 @@ class Client(tk.Frame):
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
-        ar= AppRunning.AppRunning(clientSocket)
+        ar= AppRunning.AppRunning(clientSocket, root)
         s = "Application running"
         ar.master.title(s)
         ar.master.minsize(290, 240)
@@ -92,7 +87,7 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
-        ss = ScreenShot.Screenshot(clientSocket)
+        ss = ScreenShot.Screenshot(clientSocket, root)
         s = "Screenshot"
         ss.master.title("Screenshot")
         ss.master.minsize(400, 271)
@@ -105,7 +100,7 @@ class Client(tk.Frame):
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
-        er = EditRegistry.EditRegistry(clientSocket)
+        er = EditRegistry.EditRegistry(clientSocket, root)
         s = "Edit Registry"
         er.master.title(s)
         er.master.minsize(470, 431)
@@ -118,7 +113,7 @@ class Client(tk.Frame):
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
-        ks = KeyStroke.KeyStroke(clientSocket)
+        ks = KeyStroke.KeyStroke(clientSocket, root)
         s = "Keystroke"
         ks.master.title(s)
         ks.master.minsize(290, 240)

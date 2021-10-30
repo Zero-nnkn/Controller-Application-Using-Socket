@@ -3,7 +3,6 @@ from tkinter import ttk
 from tkinter import messagebox
 
 import json
-from Client.Client import CloseButton
 import Start
 import Kill
 
@@ -20,7 +19,7 @@ class AppRunning(tk.Frame):
             return False
         else: return True
 
-    def CloseButton(self):
+    def CloseButton2(self):
         s = "Quit"
         self.__client.send(s.encode("utf-8"))
         self.destroy()
@@ -31,7 +30,7 @@ class AppRunning(tk.Frame):
         s = "Kill"
         self.__client.send(s.encode('utf-8'))
         root = tk.Toplevel()
-        root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+        root.protocol('WM_DELETE_WINDOW', lambda: self.CloseButton2(root))
         root.attributes("-topmost", True)
         kl = Kill(root)
         kl.master.title(s)
@@ -68,7 +67,7 @@ class AppRunning(tk.Frame):
         s = "Start"
         self.__client.send(s.encode('utf-8')) 
         root = tk.Toplevel()
-        root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+        root.protocol('WM_DELETE_WINDOW', lambda: self.CloseButton2(root))
         root.attributes("-topmost", True)
         st = Start(root)
         st.master.title(s)
