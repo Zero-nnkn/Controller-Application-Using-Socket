@@ -7,6 +7,7 @@ import subprocess
 import threading
 import winreg
 import KeyLog
+import keyboardController
 
 PORT = 106
 
@@ -369,6 +370,8 @@ class Server(tk.Frame):
             client.send(s.encode('utf-8'))
 
     def KeyStroke(self):
+        self.keyController.keyStroke()
+        '''
         global serverSocket
         global client
         buffer = ""
@@ -389,6 +392,7 @@ class Server(tk.Frame):
                 self.printKey()
             else: #Quit
                 return
+        '''
     def buttonClick(self):
         global serverSocket
         global client
@@ -398,7 +402,7 @@ class Server(tk.Frame):
         serverSocket.listen(5)
         print("Waiting for connection...")
         client, addr = serverSocket.accept()
-        
+        self.keyController = keyboardController.keyboardController(client)
         while True:
             buffer = ""
             buffer = client.recv(1024)

