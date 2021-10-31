@@ -5,7 +5,7 @@ import socket
 
 class macAddress():
     def __init__(self, clientSocket):
-        self.client = clientSocket
+        self.__client = clientSocket
 
     def getMacAddresses(self,family):
         for interface, snics in psutil.net_if_addrs().items():

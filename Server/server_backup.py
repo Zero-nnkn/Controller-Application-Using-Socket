@@ -419,8 +419,7 @@ class Server(tk.Frame):
             if message == "SHUTDOWN":
                 self.Shutdown()
             elif message == "SCREENSHOT":
-                
-                #self.Screenshot()
+                self.Screenshot()
             elif message == "REGISTRY":
                 self.Registry()
             elif message == "APP":

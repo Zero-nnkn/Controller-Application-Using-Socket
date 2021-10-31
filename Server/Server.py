@@ -6,16 +6,27 @@ import json
 import subprocess
 import threading
 import winreg
-import KeyLog
+
+import appController
+import processController
+import ftpController
 import keyboardController
+import macAddress
+import powerController
+import streamingServer
 
 PORT = 106
 
-serverSocket = None
-client = None
 
 class Server(tk.Frame):
     def __init__(self, master = None):
+        self.__running = False
+        self.__host = ''
+        self.__port = PORT
+        self.__client = None
+        self.__serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__serverSocket.bind((self.__host, self.__port))
+
         super().__init__(master)
         self.pack(fill="both", expand=True)
         self.createWidgets()
@@ -33,20 +44,20 @@ class Server(tk.Frame):
     def Screenshot(self):
         while True:
             buffer = ""
-            buffer = client.recv(1024).decode("utf-8")
+            buffer = self.__client.recv(1024).decode("utf-8")
             if not buffer:
                 break
             if buffer == "Take":
                 img = ImageGrab.grab()
                 imgToSend = img.tobytes()
                 size = len(imgToSend)
-                client.send(str(size).encode('utf-8'))
-                check = client.recv(10)
-                client.send(str(img.size[0]).encode('utf-8'))
-                check = client.recv(10)
-                client.send(str(img.size[1]).encode('utf-8'))
-                check = client.recv(10)
-                client.send(imgToSend)
+                self.__client.send(str(size).encode('utf-8'))
+                check = self.__client.recv(10)
+                self.__client.send(str(img.size[0]).encode('utf-8'))
+                check = self.__client.recv(10)
+                self.__client.send(str(img.size[1]).encode('utf-8'))
+                check = self.__client.recv(10)
+                self.__client.send(imgToSend)
             else:
                 break        
 
@@ -163,11 +174,11 @@ class Server(tk.Frame):
     def Registry(self):
         while True:
             buffer = ""
-            buffer = client.recv(1024).decode("utf-8")
+            buffer = self.__client.recv(1024).decode("utf-8")
             if not buffer:
                 break
             if buffer=="Reg":
-                data = client.recv(4096).decode("utf-8")
+                data = self.__client.recv(4096).decode("utf-8")
                 f = open("fileReg.reg","w")
                 f.write(data)
                 f.close()
@@ -179,23 +190,23 @@ class Server(tk.Frame):
                     test = False    
                 if test: s = "Successful edit"
                 else: s = "Edit failure"
-                client.send(s.encode("utf-8"))
+                self.__client.send(s.encode("utf-8"))
             elif buffer =="Send":
-                client.send("OK".encode("utf-8"))
+                self.__client.send("OK".encode("utf-8"))
 
-                option = client.recv(1024).decode("utf-8")
-                client.send("OK".encode("utf-8"))
+                option = self.__client.recv(1024).decode("utf-8")
+                self.__client.send("OK".encode("utf-8"))
 
-                link = client.recv(1024).decode("utf-8")
-                client.send("OK".encode("utf-8"))
+                link = self.__client.recv(1024).decode("utf-8")
+                self.__client.send("OK".encode("utf-8"))
 
-                valueName = client.recv(1024).decode("utf-8")
-                client.send("OK".encode("utf-8"))
+                valueName = self.__client.recv(1024).decode("utf-8")
+                self.__client.send("OK".encode("utf-8"))
 
-                value = client.recv(1024).decode("utf-8")
-                client.send("OK".encode("utf-8"))
+                value = self.__client.recv(1024).decode("utf-8")
+                self.__client.send("OK".encode("utf-8"))
 
-                typeValue = client.recv(1024).decode("utf-8")
+                typeValue = self.__client.recv(1024).decode("utf-8")
                 s = None
                 aKey = self.BaseRegistryKey(link)
                 subKey = self.SubKey(link)
@@ -220,7 +231,7 @@ class Server(tk.Frame):
                 else:
                     s = "Error"
                 
-                client.send(s.encode("utf-8"))
+                self.__client.send(s.encode("utf-8"))
             else:
                 return 
 
@@ -235,7 +246,7 @@ class Server(tk.Frame):
         Apps = []      
         while True:
             buffer = ""
-            buffer = client.recv(1024).decode("utf-8")
+            buffer = self.__client.recv(1024).decode("utf-8")
             if not buffer:
                 break
 
@@ -244,45 +255,45 @@ class Server(tk.Frame):
                 Apps = self.process2List(s)
                 dataToSend = json.dumps(Apps).encode('utf-8') 
                 size = len(dataToSend)
-                client.send(str(size).encode('utf-8'))
-                check = client.recv(10)
-                client.send(dataToSend)
+                self.__client.send(str(size).encode('utf-8'))
+                check = self.__client.recv(10)
+                self.__client.send(dataToSend)
             elif buffer == "Kill":
                 while True:
                     buffer2 = ""
-                    buffer2 = client.recv(1024).decode("utf-8")
+                    buffer2 = self.__client.recv(1024).decode("utf-8")
                     if buffer2 == "KillID":
-                        IDtoKill = client.recv(10).decode('utf-8')
+                        IDtoKill = self.__client.recv(10).decode('utf-8')
                         test = False
                         for app in Apps:
                             if IDtoKill==app[1]:
                                 try:
                                     os.kill(int(IDtoKill), signal.SIGTERM) 
                                     s = "Success"
-                                    client.send(s.encode('utf-8'))
+                                    self.__client.send(s.encode('utf-8'))
                                 except:
                                     s = "Error"
-                                    client.send(s.encode('utf-8'))
+                                    self.__client.send(s.encode('utf-8'))
                                 test = True
                         if test==False:
                             s = "No App Found"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                     else:
                         break 
             elif buffer == "Start":
                 while True:
                     buffer2 = ""
-                    buffer2 = client.recv(1024).decode("utf-8")
+                    buffer2 = self.__client.recv(1024).decode("utf-8")
                     if buffer2 == "StartID":
-                        AppToStart = client.recv(1024).decode('utf-8') + ".exe"
+                        AppToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
                         try:
                             PathApp= os.path.relpath(AppToStart)
                             os.startfile(PathApp)
                             s = "Success"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                         except:
                             s = "Error"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                     else:
                         break
             else: #Quit
@@ -293,7 +304,7 @@ class Server(tk.Frame):
 
         while True:
             buffer = ""
-            buffer = client.recv(1024).decode("utf-8")
+            buffer = self.__client.recv(1024).decode("utf-8")
             if not buffer:
                 break
 
@@ -303,109 +314,69 @@ class Server(tk.Frame):
 
                 dataToSend = json.dumps(Processes).encode('utf-8') 
                 size = len(dataToSend)
-                client.send(str(size).encode('utf-8'))
-                check = client.recv(10)
-                client.send(dataToSend)
+                self.__client.send(str(size).encode('utf-8'))
+                check = self.__client.recv(10)
+                self.__client.send(dataToSend)
             elif buffer == "Kill":
                 while True:
                     buffer2 = ""
-                    buffer2 = client.recv(1024).decode("utf-8")
+                    buffer2 = self.__client.recv(1024).decode("utf-8")
                     if buffer2 == "KillID":
-                        IDtoKill = client.recv(10).decode('utf-8')
+                        IDtoKill = self.__client.recv(10).decode('utf-8')
                         test = False
                         for process in Processes:
                             if IDtoKill == process[1]:
                                 try:
                                     os.kill(int(IDtoKill),signal.SIGTERM)
                                     s = "Success"
-                                    client.send(s.encode('utf-8'))
+                                    self.__client.send(s.encode('utf-8'))
                                 except:
                                     s = "Error"
-                                    client.send(s.encode('utf-8'))
+                                    self.__client.send(s.encode('utf-8'))
                                 test = True
                         if test == False:
                             s = "Error"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                     else:
                         break 
             elif buffer == "Start":
                 while True:
                     buffer2 = ""
-                    buffer2 = client.recv(1024).decode("utf-8")
+                    buffer2 = self.__client.recv(1024).decode("utf-8")
                     if buffer2 == "StartID":
-                        ProcessToStart = client.recv(1024).decode('utf-8') + ".exe"
+                        ProcessToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
                         try:
                             PathProcess = os.path.relpath(ProcessToStart)
                             os.startfile(PathProcess)
                             s = "Success"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                         except:
                             s = "Error"
-                            client.send(s.encode('utf-8'))
+                            self.__client.send(s.encode('utf-8'))
                     else:
                         break
             else: #Quit
                 return
 
-    def hookKey(self):
-        KeyLog.isStop = False
-
-    def unhookKey(self):
-        KeyLog.isStop = True
-
-    def printKey(self):
-        KeyLog.isStop = True
-        s = ""
-        with open(KeyLog.FilLogPath, 'r') as f:
-            s = f.read()
-        f.close()
-        if s=="": 
-            ss = "No"
-            client.send(ss.encode('utf-8'))
-        else:
-            ss = "Yes"
-            client.send(ss.encode('utf-8'))
-            check = client.recv(10)
-            open(KeyLog.FilLogPath, "w")
-            client.send(s.encode('utf-8'))
-
     def KeyStroke(self):
         self.keyController.keyStroke()
-        '''
-        global serverSocket
-        global client
-        buffer = ""
-        tkLog = threading.Thread(target=KeyLog.startKlog)
-        tkLog.daemon = True
-        open(KeyLog.FilLogPath, "w")
-        tkLog.start()
-        KeyLog.isStop = True
-        while True:
-            buffer = client.recv(1024).decode("utf-8")
-            if not buffer:
-                break
-            if buffer == "Hook":
-                self.hookKey()
-            elif buffer == "Unhook":
-                self.unhookKey()
-            elif buffer == "Print":
-                self.printKey()
-            else: #Quit
-                return
-        '''
+        
     def buttonClick(self):
-        global serverSocket
-        global client
-
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serverSocket.bind(("", PORT))
-        serverSocket.listen(5)
+        self.__serverSocket.listen(5)
         print("Waiting for connection...")
-        client, addr = serverSocket.accept()
-        self.keyController = keyboardController.keyboardController(client)
+        self.__client, addr = self.__serverSocket.accept()
+
+        self.appController = appController.appController(self.__client)
+        self.processController = processController.processController(self.__client)
+        self.ftpController = ftpController.ftpController(self.__client)
+        self.keyboardController = keyboardController.keyboardController(self.__client)
+        self.macAddress = macAddress.macAddress(self.__client)
+        self.powerController = powerController.powerController(self.__client)
+        self.streamingServer = streamingServer.streamingServer(self.__client)
+
         while True:
             buffer = ""
-            buffer = client.recv(1024)
+            buffer = self.__client.recv(1024)
             
             if not buffer:
                 break
@@ -428,7 +399,7 @@ class Server(tk.Frame):
                 break
             else:
                 break
-        serverSocket.close()
+        self.__serverSocket.close()
         
 
 def CloseButton(root):

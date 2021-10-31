@@ -7,7 +7,7 @@ import numpy as np
 
 class streamingServer():
     def __init__(self, clientSocket):
-        self.client = clientSocket
+        self.__client = clientSocket
         self._configure()
         self.__running = False
 
