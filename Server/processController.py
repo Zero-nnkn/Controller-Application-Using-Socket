@@ -2,7 +2,7 @@ import os, signal
 import subprocess
 import json
 
-def processController():
+class ProcessController():
     def __init__(self, clientSocket):
         self.processList = []
         self.__client = clientSocket

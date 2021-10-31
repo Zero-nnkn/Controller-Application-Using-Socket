@@ -3,7 +3,7 @@ from tkinter.constants import NONE
 import psutil
 import socket
 
-class macAddress():
+class MacAddress():
     def __init__(self, clientSocket):
         self.__client = clientSocket
 

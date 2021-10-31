@@ -4,7 +4,7 @@ import shutil
 
 CHUNKSIZE = 1_000_000
 
-class ftpController():
+class FtpController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.currentPath = "\\"

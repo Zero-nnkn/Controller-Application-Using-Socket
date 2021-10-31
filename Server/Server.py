@@ -365,13 +365,13 @@ class Server(tk.Frame):
         print("Waiting for connection...")
         self.__client, addr = self.__serverSocket.accept()
 
-        self.appController = appController.appController(self.__client)
-        self.processController = processController.processController(self.__client)
-        self.ftpController = ftpController.ftpController(self.__client)
-        self.keyboardController = keyboardController.keyboardController(self.__client)
-        self.macAddress = macAddress.macAddress(self.__client)
-        self.powerController = powerController.powerController(self.__client)
-        self.streamingServer = streamingServer.streamingServer(self.__client)
+        self.appController = appController.AppController(self.__client)
+        self.processController = processController.ProcessController(self.__client)
+        self.ftpController = ftpController.FtpController(self.__client)
+        self.keyboardController = keyboardController.KeyboardController(self.__client)
+        self.macAddress = macAddress.MacAddress(self.__client)
+        self.powerController = powerController.PowerController(self.__client)
+        self.streamingServer = streamingServer.StreamingServer(self.__client)
 
         while True:
             buffer = ""

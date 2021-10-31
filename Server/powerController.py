@@ -1,7 +1,7 @@
 import os
 from ctypes import windll
 
-class powerController():
+class PowerController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
 
