@@ -15,8 +15,7 @@ import macAddress
 import powerController
 import streamingServer
 
-PORT = 106
-
+PORT = 5000
 
 class Server(tk.Frame):
     def __init__(self, master = None):
