@@ -1,7 +1,10 @@
 import socket
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import Image, messagebox
 from tkinter import END,INSERT
+
+from PIL import Image
+from PIL import ImageTk
 
 PORT = 106
 
@@ -13,11 +16,15 @@ def CloseButton(root):
     root.destroy()
 
 class Client(tk.Frame):
-    def __init__(self, master = None):
-        super().__init__(master)
-        self.pack(fill = "both", expand = True)
-        self.configure(background="black")
-        self.createWidgets()
+
+    def __init__(self, root):
+            self.root=root
+            self.root.title("ONLINE LIBRARY")
+            self.root.geometry("700x500")
+            self.root.resizable(False,False)
+            self.root.grab_set()
+            self.createWidgets()
+
 
     def checkConnected(self):
         if clientSocket == None:
@@ -42,22 +49,35 @@ class Client(tk.Frame):
             messagebox.showinfo("Error", "Not connected to the server")
 
     def createWidgets(self):
+
+        self.frame0 = tk.LabelFrame(self.root,bd=1,background="black")
+        self.frame0.place(x=0, y=0, height=500, width=200)
+
+        self.frame1 = tk.LabelFrame(self.root,bd=1,background="black")
+        self.frame1.place(x=200, y=0, height=500, width=500)
+
+        img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\logo.jpg")
+        img = img.resize((100,100))
+        self.img=ImageTk.PhotoImage(img)
+        self.theme=tk.Label(self.frame0,image=self.img,background="black")
+        self.theme.place(x=45, y=45)
+        img.close()
+
         self.ipConnect = tk.StringVar()
         self.ipConnect.set("Enter IP address")
-        self.txtIP = tk.Entry(self, textvariable = self.ipConnect)
-        self.txtIP.place(x=10, y=10, height=22, width=240)
+        self.txtIP = tk.Entry(self.frame0, textvariable = self.ipConnect)
+        self.txtIP.place(x=10, y=200, height=22, width=100)
         self.txtIP.configure(background="white", relief="groove")
         self.txtIP.bind("<Key-Return>", self.butConnectClick)
         
         #flat, groove, raised, ridge, solid, or sunken
-        self.butConnect = tk.Button(self,text = "Connect", relief="groove", bg="#d6d6d6")
+        self.butConnect = tk.Button(self.frame0,text = "Connect", relief="groove", bg="#d6d6d6")
         self.butConnect["command"] = self.butConnectClick
-        self.butConnect.place(x=260, y=10, height=22, width=100)
+        self.butConnect.place(x=50, y=250, height=22, width=100)
 
         
 
-root = tk.Tk()
-app = Client(root)
-app.master.title("Client")
-app.master.minsize(370, 252)
-app.mainloop()  
+root=tk.Tk()
+#root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+controler=Client(root)
+root.mainloop()

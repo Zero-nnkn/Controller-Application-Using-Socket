@@ -47,10 +47,10 @@ class Client(tk.Frame):
             messagebox.showinfo("Error", "Not connected to the server")
 
     def butProcessClick(self):
-        # if not self.checkConnected():
-        #    return
+        if not self.checkConnected():
+           return
         s = "PROCESS"
-        # clientSocket.send(s.encode('utf-8'))
+        clientSocket.send(s.encode('utf-8'))
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
@@ -93,10 +93,10 @@ class Client(tk.Frame):
         ss.master.minsize(400, 271)
 
     def butEditRegClick(self):
-        if not self.checkConnected():
-           return
+        # if not self.checkConnected():
+        #    return
         s = "REGISTRY"
-        clientSocket.send(s.encode('utf-8'))
+        # clientSocket.send(s.encode('utf-8'))
         root = tk.Toplevel()
         root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
         root.attributes("-topmost", True)
