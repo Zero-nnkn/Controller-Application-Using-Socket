@@ -16,6 +16,12 @@ PORT = 106
 serverSocket = None
 client = None
 
+''' TO-DO
+- Phần gửi file reg sửa lại gửi theo size
+- Phần tin nhắn send -> edit ở registry
+- Đổi tất cả send -> sendall
+'''
+
 class Server(tk.Frame):
     def __init__(self, master = None):
         super().__init__(master)
