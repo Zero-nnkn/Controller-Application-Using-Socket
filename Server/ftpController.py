@@ -1,6 +1,7 @@
 import os
 import psutil
 import shutil
+import json
 
 CHUNKSIZE = 1_000_000
 
@@ -8,30 +9,67 @@ class FtpController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.currentPath = "\\"
-        self.startPath = "\\"
         self.fileList = []
         self.folderList = []
 
-    def startListening():
-        return None
+    def startListening(self):
+        self.getDrive()
+        request = ""
+        while True:
+            request = self.self.__client.recv(1024).decode("utf-8")
+            if not request:
+                break
+            if request=="view":
+                info = self.self.__client.recv(1024).decode("utf-8")
+                if(os.path.exists(os.path.join(self.currentPath, info))):
+                    self.currentPath = os.path.join(self.currentPath, info)
+                    self.sendFolderInfo(self.currentPath)
+            elif request == "copy2server":
+                info = self.self.__client.recv(1024).decode("utf-8")
+                fullPath = os.path.join(self.currentPath, info)
+                self.recvData(fullPath)
+            elif request == "copy2client":
+                info = self.self.__client.recv(1024).decode("utf-8")
+                fullPath = os.path.join(self.currentPath, info)
+                self.sendData(fullPath)
+            elif request == "delete":
+                info = self.self.__client.recv(1024).decode("utf-8")
+                fullPath = os.path.join(self.currentPath, info)
+                self.deleteData(fullPath)
+            else: #Quit
+                return
+
 
     def getDrive(self):
         drps = psutil.disk_partitions()
         self.drives = [dp.device for dp in drps if dp.fstype == 'NTFS']
+        dataToSend = json.dumps(self.drives).encode('utf-8') 
+        size = len(dataToSend)
+        self.__client.send(str(size).encode('utf-8'))
+        check = self.__client.recv(10)
+        self.__client.send(dataToSend)
 
-    def list_files(self, startpath):
-        for root, subfolder, files in os.walk(startpath):
+
+    def getFolderInfo(self, path):
+        for root, subfolder, files in os.walk(path):
             self.fileList = files
             self.folderList = subfolder         
-            '''
-            level = root.replace(startpath, '').count(os.sep)
-            indent = ' ' * 4 * (level)
-            print('{}{}/'.format(indent, os.path.basename(root)))
-            subindent = ' ' * 4 * (level + 1)
-            for f in files:
-                print('{}{}'.format(subindent, f))
-            '''
             break
+
+    def sendFolderInfo(self):
+        dataToSend = json.dumps(self.fileList).encode('utf-8') 
+        size = len(dataToSend)
+        self.__client.send(str(size).encode('utf-8'))
+        check = self.__client.recv(10)
+        self.__client.send(dataToSend)
+
+        dataToSend = json.dumps(self.folderList).encode('utf-8') 
+        size = len(dataToSend)
+        self.__client.send(str(size).encode('utf-8'))
+        check = self.__client.recv(10)
+        self.__client.send(dataToSend)
+        
+        
         
     def delete(self,path, flag):
         if(flag==0): #file
@@ -53,23 +91,10 @@ class FtpController():
         elif(flag==1):
             self.recvFolder(self, desPath)
 
-    def sendFile(self, srcPath):
-        # os.getcwd()
-        # os.getcwd()+ '\\' + link
-        # Name of file
-        head, tail = os.path.split(srcPath)
-        self.__client.send(tail.encode())
-        check = self.__client.recv(10)
-
-        f = open(srcPath)
-        size = os.path.getsize(srcPath)
-        self.__client.send(str(size).encode('utf-8'))
-        check = self.__client.recv(10)
-        while size > 0:
-            l = f.read(1024)
-            self.__client.send(l)
-            size = size - len(l)
-        f.close()
+    def sendFile(self, relpath, filesize, srcPath):
+        self.__client.sendall(relpath.encode() + b'\n')
+        self.__client.sendall(str(filesize).encode() + b'\n')
+        return None
 
     def sendFolder(self, srcPath):
         # Name of folder
@@ -86,8 +111,8 @@ class FtpController():
                 print(f'Sending {relpath}')
 
                 with open(filename,'rb') as f:
-                    self.__client.sendall(relpath.encode() + b'\n')
-                    self.__client.sendall(str(filesize).encode() + b'\n')
+
+
 
                     # Send the file in chunks so large files can be handled.
                     while True:
