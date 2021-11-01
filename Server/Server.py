@@ -358,7 +358,7 @@ class Server(tk.Frame):
                 return
 
     def KeyStroke(self):
-        self.keyController.keyStroke()
+        self.keyController.startListening()
         
     def buttonClick(self):
         self.__serverSocket.listen(5)
@@ -380,9 +380,14 @@ class Server(tk.Frame):
             if not buffer:
                 break
             message = buffer.decode('utf-8')
+            if message == "POWER":
+                self.powerController.startListening()
+            elif message == "KEYBOARDCONTROLLER":
+                self.keyboardController.startListening()
+            elif message == "MACADDRESS":
+                self.macAddress.startListening()
+            
 
-            if message == "SHUTDOWN":
-                self.Shutdown()
             elif message == "SCREENSHOT":
                 self.Screenshot()
             elif message == "REGISTRY":
@@ -391,8 +396,6 @@ class Server(tk.Frame):
                 self.AppRunning()
             elif message == "PROCESS":
                 self.ProcessRunning()
-            elif message == "KEYSTROKE":
-                self.KeyStroke()
             elif message == 'EXIT':
                 root.destroy()
                 break

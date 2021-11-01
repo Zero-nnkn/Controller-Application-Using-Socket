@@ -19,13 +19,14 @@ class KeyboardController():
                 self.keyhook.unistallHookProc()
                 return
         
-
-    def keyStroke(self):
+    def startListening(self):
         request = ""
         while True:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
+            if request == "lock":
+                self.lockKeyboard()
             if request == "hook":
                 self.hookKey()
             elif request == "unhook":   

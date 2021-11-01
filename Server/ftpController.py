@@ -12,6 +12,9 @@ class FtpController():
         self.fileList = []
         self.folderList = []
 
+    def startListening():
+        return None
+
     def getDrive(self):
         drps = psutil.disk_partitions()
         self.drives = [dp.device for dp in drps if dp.fstype == 'NTFS']

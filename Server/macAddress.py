@@ -2,26 +2,42 @@ import ctypes
 from tkinter.constants import NONE
 import psutil
 import socket
+import json
 
 class MacAddress():
     def __init__(self, clientSocket):
         self.__client = clientSocket
 
-    def getMacAddresses(self,family):
+    def startListening(self):
+        request = ""
+        while True:
+            request = self.self.__client.recv(1024).decode("utf-8")
+            if not request:
+                break
+            if request == "macaddress":
+                self.sendMacAddress()
+            else: #Quit
+                return
+
+    def getMacAddresses(self):
         for interface, snics in psutil.net_if_addrs().items():
+            ip = None
+            mac = None
+            netmask = None
             for snic in snics:
-                if snic.family == family:
-                    yield (interface, (snic.address, snic.netmask))
+                if snic.family == socket.AF_INET:
+                    ip = snic.address
+                    netmask = snic.netmask
+                if snic.family == psutil.AF_LINK:
+                    mac = snic.address
+            yield (interface, mac, ip, netmask)
 
     def sendMacAddress(self):
-
-        ipv4s = dict(self.getMacAddresses(socket.AF_INET))
-        macs = list(self.getMacAddresses(psutil.AF_LINK))
-        mac2ipv4 = {macs[k][0]: ipv4s[k] for k in set(macs) & set(ipv4s)}
-
-        print(macs)
+        mac2ipv4 = list(self.getMacAddresses())
+        dataToSend = json.dumps(mac2ipv4).encode('utf-8') 
+        size = len(dataToSend)
+        self.__client.sendall(str(size).encode('utf-8'))
+        check = self.__client.recv(10)
+        self.__client.sendall(dataToSend)
         
-        
-
-
 

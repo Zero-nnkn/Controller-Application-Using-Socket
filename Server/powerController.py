@@ -5,7 +5,7 @@ class PowerController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
 
-    def power(self):
+    def startListening(self):
         request = ""
         while True:
             request = self.self.__client.recv(1024).decode("utf-8")
