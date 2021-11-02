@@ -1,4 +1,5 @@
 import os
+from posixpath import relpath
 import psutil
 import shutil
 import json
@@ -39,7 +40,6 @@ class FtpController():
             else: #Quit
                 return
 
-
     def getDrive(self):
         drps = psutil.disk_partitions()
         self.drives = [dp.device for dp in drps if dp.fstype == 'NTFS']
@@ -70,65 +70,144 @@ class FtpController():
         self.__client.send(dataToSend)
         
         
-        
-    def delete(self,path, flag):
-        if(flag==0): #file
+    def deleteData(self,path):
+        if(os.path.isfile(path)):
             os.remove(path)
-        elif(flag==1): #folder
-            shutil.rmtree(path)
+        elif(os.path.isdir(path)):
+            try:
+                shutil.rmtree(path)
+            except OSError as e:
+                print("Error: %s - %s." % (e.filename, e.strerror))
         else:
             return
-    
-    def sendData(self, srcPath, flag):
-        if(flag==0):
-            self.sendFile(self, srcPath)
-        elif(flag==1):
-            self.sendFolder(self, srcPath)
+
+    def sendData(self, path):
+        if(os.path.isfile(path)):
+            head, relpath = os.path.split(path)
+            self.sendFile(path, relpath)
+        elif(os.path.isdir(path)):
+            self.sendFolder(path)
+        else:
+            return
 
     def recvData(self, desPath, flag):
-        if(flag==0):
-            self.recvFile(self, desPath)
-        elif(flag==1):
-            self.recvFolder(self, desPath)
+        if(os.path.isfile(path)):
+            self.recvFile(path)
+        elif(os.path.isdir(path)):
+            self.recvFolder(path)
+        else:
+            return
 
-    def sendFile(self, relpath, filesize, srcPath):
+
+    def sendFile(self, fullPath, relpath):
+        filesize = os.path.getsize(fullPath)
         self.__client.sendall(relpath.encode() + b'\n')
         self.__client.sendall(str(filesize).encode() + b'\n')
-        return None
+
+        # Message when need overwrite, rename or not
+        check = self.__client.recv(10)
+        if check == "continue":
+            with open(fullPath,'rb') as f:
+            # Send the file in chunks so large files can be handled.
+                while True:
+                    data = f.read(CHUNKSIZE)
+                    if not data: break
+                    self.__client.sendall(data)
+        # When duplicate and pause copy
+        else: 
+            return
 
     def sendFolder(self, srcPath):
-        # Name of folder
-        head, tail = os.path.split(srcPath)
-        self.__client.send(tail.encode())
-        check = self.__client.recv(10)
-
         for path,subfolder,files in os.walk(srcPath):
             for file in files:
+                fullPath = os.path.join(path,file)
+                relpath = os.path.relpath(fullPath,srcPath)
+                
+
+                print(f'Sending {relpath}')
+                self.sendFile(fullPath, relpath)
+
+    def recvFolder(self, desPath):
+        with sock,sock.makefile('rb') as clientfile:
+            while True:
+                raw = clientfile.readline()
+                if not raw: break # no more files, server closed connection.
+
+                filename = raw.strip().decode()
+                length = int(clientfile.readline())
+                print(f'Downloading {filename}...\n  Expecting {length:,} bytes...',end='',flush=True)
+
+                path = os.path.join(desPath,filename)
+                os.makedirs(os.path.dirname(path),exist_ok=True)
+
+                # Check if exists
+                if os.path.exists(path):
+                    self.__client.sendall("exists".encode())
+                    request = self.recv(20).decode()
+                    if request == "pause":
+                        continue
+                    elif request == "rename":
+                        i = 1
+                        while os.path.exists(path) == True:
+                            dir, fileName = os.path.split(path)
+                            fileName = "Copy {i} of " + fileName 
+                            path = os.path.join(dir, fileName)
+                            i += 1
+                    else:
+                        pass
+                else:
+                    self.__client.sendall("not exists".encode())   
+
+                # Read the data in chunks so it can handle large files.
+                with open(path,'wb') as f:
+                    while length:
+                        chunk = min(length,CHUNKSIZE)
+                        data = clientfile.read(chunk)
+                        if not data: break
+                        f.write(data)
+                        length -= len(data)
+                    else: # only runs if while doesn't break and length==0
+                        print('Complete')
+                        continue
+
+                # socket was closed early.
+                print('Incomplete')
+                break 
+
+
+
+
+import socket
+
+def sendFile(fullPath, relpath):
+    filesize = os.path.getsize(fullPath)
+    sock.sendall(relpath.encode() + b'\n')
+    sock.sendall(str(filesize).encode() + b'\n')
+
+    with open(fullPath,'rb') as f:
+    # Send the file in chunks so large files can be handled.
+        while True:
+            data = f.read(CHUNKSIZE)
+            if not data: break
+            sock.sendall(data)
+
+sock = socket.socket()
+sock.bind(('',5000))
+sock.listen(1)
+PATH = "C:\\Users\\COMPUTER\\Desktop\\Fruit"
+
+while True:
+    print('Waiting for a client...')
+    client,address = sock.accept()
+    print(f'Client joined from {address}')
+    with client:
+        for path,dirs,files in os.walk(PATH):
+            for file in files:
                 filename = os.path.join(path,file)
-                relpath = os.path.relpath(filename,srcPath)
-                filesize = os.path.getsize(filename)
+                relpath = os.path.relpath(filename,PATH)
 
                 print(f'Sending {relpath}')
 
-                with open(filename,'rb') as f:
+                sendFile(filename,relpath)
 
-
-
-                    # Send the file in chunks so large files can be handled.
-                    while True:
-                        data = f.read(CHUNKSIZE)
-                        if not data: break
-                        self.__client.sendall(data)
-
-    def recvFile(self,desPath):
-        f = open(desPath, 'w')
-        buffer = self.__client.recv(1024)
-        while(buffer):
-            data = self.__client.recv(1024)
-            buffer+=data
-        self.content = buffer
-
-
-
-
-
+        print('Done.')
