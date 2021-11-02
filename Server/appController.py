@@ -2,10 +2,25 @@ import os, signal
 import subprocess
 import json
 
-def appController():
+class AppController():
     def __init__(self, clientSocket):
         self.appList = []
         self.__client = clientSocket
+
+    def startListening(self):
+        request = ""
+        while True:
+            request = self.self.__client.recv(1024).decode("utf-8")
+            if not request:
+                break
+            if request == "view":
+                self.viewList()
+            elif request == "kill":   
+                self.killApp()
+            elif request == "start":   
+                self.startApp()
+            else: #Quit
+                return
 
     def process2List(self,processes):
         a = processes.decode().strip()
@@ -24,29 +39,29 @@ def appController():
         check = self.__client.recv(10)
         self.__client.send(dataToSend)
 
-        def killProcess(self):
-            buffer = ""
-            buffer = self.__client.recv(1024).decode("utf-8")
-            if buffer == "KillID":
-                IDtoKill = self.__client.recv(10).decode('utf-8')
-                test = False
-                for app in self.appList:
-                    if IDtoKill==app[1]:
-                        try:
-                            os.kill(int(IDtoKill), signal.SIGTERM) 
-                            s = "Success"
-                            self.__client.send(s.encode('utf-8'))
-                        except:
-                            s = "Error"
-                            self.__client.send(s.encode('utf-8'))
-                        test = True
-                if test==False:
-                    s = "No App Found"
-                    self.__client.send(s.encode('utf-8'))
-            else:
-                return
-    
-    def startProcess(self):
+    def killApp(self):
+        buffer = ""
+        buffer = self.__client.recv(1024).decode("utf-8")
+        if buffer == "KillID":
+            IDtoKill = self.__client.recv(10).decode('utf-8')
+            test = False
+            for app in self.appList:
+                if IDtoKill==app[1]:
+                    try:
+                        os.kill(int(IDtoKill), signal.SIGTERM) 
+                        s = "Success"
+                        self.__client.send(s.encode('utf-8'))
+                    except:
+                        s = "Error"
+                        self.__client.send(s.encode('utf-8'))
+                    test = True
+            if test==False:
+                s = "No App Found"
+                self.__client.send(s.encode('utf-8'))
+        else:
+            return
+
+    def startApp(self):
         buffer = ""
         buffer = self.__client.recv(1024).decode("utf-8")
         if buffer == "StartID":

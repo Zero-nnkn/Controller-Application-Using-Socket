@@ -13,6 +13,7 @@ import ftpController
 import keyboardController
 import macAddress
 import powerController
+import registryController
 import streamingServer
 
 PORT = 5000
@@ -59,180 +60,6 @@ class Server(tk.Frame):
                 self.__client.send(imgToSend)
             else:
                 break        
-
-    def BaseRegistryKey(self,link):
-        a = None
-        if link.find("\\")>=0 :
-            key = link[:link.find("\\")]
-            if key == "HKEY_CLASSIES_ROOT": a = winreg.HKEY_CLASSES_ROOT
-            elif key == "HKEY_CURRENT_USER": a = winreg.HKEY_CURRENT_USER
-            elif key == "HKEY_LOCAL_MACHINE": a = winreg.HKEY_LOCAL_MACHINE
-            elif key == "HKEY_USERS": a = winreg.HKEY_USERS
-            elif key == "HKEY_CURRENT_CONFIG": a = winreg.HKEY_CURRENT_CONFIG
-            else: a = None
-        return a   
-        
-    def SubKey(self,link):
-        a = None
-        if link.find("\\")>=0 :
-            a = link[link.find("\\")+1:]
-        return a
-
-    def Value2String(self,value,typeValue):
-        if typeValue == winreg.REG_SZ: 
-            return value
-        elif typeValue == winreg.REG_MULTI_SZ:
-            return " ".join(value)
-        elif typeValue ==  winreg.REG_EXPAND_SZ:
-            return value
-        elif typeValue == winreg.REG_BINARY:
-            temp = bytearray(value)
-            temp = [str(i) for i in temp]
-            return " ".join(temp)
-        elif typeValue == winreg.REG_DWORD:
-            return str(value)
-        elif typeValue == winreg.REG_QWORD:
-            return str(value)
-        else:
-            return str(value)
-    def String2Value(self,stringValue,typeValue):
-        try:
-            if typeValue == winreg.REG_SZ: 
-                return stringValue
-            elif typeValue == winreg.REG_MULTI_SZ:
-                return stringValue.split("\n")
-            elif typeValue ==  winreg.REG_EXPAND_SZ:
-                return stringValue
-            elif typeValue == winreg.REG_BINARY:
-                temp = bytes()
-                for  i in stringValue.split():
-                    try:
-                        temp += bytes([int(i)])
-                    except:
-                        temp += bytes([int(i,16)])
-                return temp
-            elif typeValue == winreg.REG_DWORD:
-                return int(stringValue)
-            elif typeValue == winreg.REG_QWORD:
-                return int(stringValue)
-            else:
-                return stringValue
-        except:
-            return None
-
-
-    def getValue(self,aKey,subKey,valueName):
-        try:
-            key = winreg.OpenKey(aKey,subKey,0, winreg.KEY_ALL_ACCESS)
-            if not key:return "Error"
-        except:
-            return "Error"
-
-        try: 
-            value = winreg.QueryValueEx(key, valueName)
-            stringValue = self.Value2String(value[0], value[1])
-            return stringValue
-        except:
-            return "Error"
-    
-    def setValue(self,aKey,subKey,valueName, value, typeValue):
-        try:
-            key = winreg.OpenKey(aKey,subKey,0, winreg.KEY_ALL_ACCESS)
-            if not key:return "Error"
-        except:
-            return "Error"
-        
-        kind = None
-        if typeValue == "Binary": kind = winreg.REG_BINARY 
-        elif typeValue == "DWORD": kind = winreg.REG_DWORD
-        elif typeValue == "QWORD": kind = winreg.REG_QWORD
-        elif typeValue == "String": kind = winreg.REG_SZ
-        elif typeValue == "Multi-String": kind = winreg.REG_MULTI_SZ
-        elif typeValue == "Expandable String": kind = winreg.REG_EXPAND_SZ
-        else: return "Error"
-
-        try:
-            tempValue = self.String2Value(value,kind)
-            winreg.SetValueEx(key,valueName,0,kind,tempValue)
-        except:
-            return "Error"
-        return "Success"
-
-    def deleteValue(self,aKey,subKey,valueName):
-        try:
-            key = winreg.OpenKey(aKey,subKey,0, winreg.KEY_ALL_ACCESS)
-            if not key:return "Error"
-        except:
-            return "Error"
-        try:
-            winreg.DeleteValue(key,valueName)
-        except:
-            return "Error"
-        return "Success"
-    
-    def Registry(self):
-        while True:
-            buffer = ""
-            buffer = self.__client.recv(1024).decode("utf-8")
-            if not buffer:
-                break
-            if buffer=="Reg":
-                data = self.__client.recv(4096).decode("utf-8")
-                f = open("fileReg.reg","w")
-                f.write(data)
-                f.close()
-                test = True
-                s = None
-                try:
-                    subprocess.call(["reg", "import", "fileReg.reg"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                except:
-                    test = False    
-                if test: s = "Successful edit"
-                else: s = "Edit failure"
-                self.__client.send(s.encode("utf-8"))
-            elif buffer =="Send":
-                self.__client.send("OK".encode("utf-8"))
-
-                option = self.__client.recv(1024).decode("utf-8")
-                self.__client.send("OK".encode("utf-8"))
-
-                link = self.__client.recv(1024).decode("utf-8")
-                self.__client.send("OK".encode("utf-8"))
-
-                valueName = self.__client.recv(1024).decode("utf-8")
-                self.__client.send("OK".encode("utf-8"))
-
-                value = self.__client.recv(1024).decode("utf-8")
-                self.__client.send("OK".encode("utf-8"))
-
-                typeValue = self.__client.recv(1024).decode("utf-8")
-                s = None
-                aKey = self.BaseRegistryKey(link)
-                subKey = self.SubKey(link)
-                if option == "Create key":
-                    try:
-                        winreg.CreateKey(aKey,subKey)
-                        s = "Success"
-                    except:
-                        s = "Error"
-                elif option == "Delete key":
-                    try:
-                        winreg.DeleteKey(aKey,subKey)
-                        s = "Success"
-                    except:
-                        s = "Error"
-                elif option == "Get value": 
-                    s = self.getValue(aKey,subKey,valueName)
-                elif option == "Set value":
-                    s = self.setValue(aKey,subKey,valueName,value,typeValue)
-                elif option == "Delete value":
-                    s = self.deleteValue(aKey,subKey,valueName)
-                else:
-                    s = "Error"
-                
-                self.__client.send(s.encode("utf-8"))
-            else:
-                return 
 
     def process2List(self,processes):
         a = processes.decode().strip()
@@ -358,20 +185,22 @@ class Server(tk.Frame):
                 return
 
     def KeyStroke(self):
-        self.keyController.keyStroke()
+        self.keyController.startListening()
         
     def buttonClick(self):
         self.__serverSocket.listen(5)
         print("Waiting for connection...")
         self.__client, addr = self.__serverSocket.accept()
 
-        self.appController = appController.appController(self.__client)
-        self.processController = processController.processController(self.__client)
-        self.ftpController = ftpController.ftpController(self.__client)
-        self.keyboardController = keyboardController.keyboardController(self.__client)
-        self.macAddress = macAddress.macAddress(self.__client)
-        self.powerController = powerController.powerController(self.__client)
-        self.streamingServer = streamingServer.streamingServer(self.__client)
+        self.appController = appController.AppController(self.__client)
+        self.processController = processController.ProcessController(self.__client)
+        self.ftpController = ftpController.FtpController(self.__client)
+        self.keyboardController = keyboardController.KeyboardController(self.__client)
+        self.macAddress = macAddress.MacAddress(self.__client)
+        self.powerController = powerController.PowerController(self.__client)
+        self.registryController = registryController.RegistryController(self.__client)
+        self.streamingServer = streamingServer.StreamingServer(self.__client)
+
 
         while True:
             buffer = ""
@@ -380,9 +209,16 @@ class Server(tk.Frame):
             if not buffer:
                 break
             message = buffer.decode('utf-8')
+            if message == "POWER":
+                self.powerController.startListening()
+            elif message == "KEYBOARDCONTROLLER":
+                self.keyboardController.startListening()
+            elif message == "MACADDRESS":
+                self.macAddress.startListening()
+            elif message == "REGISTRY":
+                self.registryController.startListening()
+            
 
-            if message == "SHUTDOWN":
-                self.Shutdown()
             elif message == "SCREENSHOT":
                 self.Screenshot()
             elif message == "REGISTRY":
@@ -391,8 +227,6 @@ class Server(tk.Frame):
                 self.AppRunning()
             elif message == "PROCESS":
                 self.ProcessRunning()
-            elif message == "KEYSTROKE":
-                self.KeyStroke()
             elif message == 'EXIT':
                 root.destroy()
                 break

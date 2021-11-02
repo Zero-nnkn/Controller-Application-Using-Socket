@@ -2,10 +2,25 @@ import os, signal
 import subprocess
 import json
 
-def processController():
+class ProcessController():
     def __init__(self, clientSocket):
         self.processList = []
         self.__client = clientSocket
+
+    def startListening(self):
+        request = ""
+        while True:
+            request = self.self.__client.recv(1024).decode("utf-8")
+            if not request:
+                break
+            if request == "view":
+                self.viewList()
+            elif request == "kill":   
+                self.killProcess()
+            elif request == "start":   
+                self.startProcess()
+            else: #Quit
+                return
 
     def process2List(self,processes):
         a = processes.decode().strip()
