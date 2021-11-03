@@ -81,6 +81,7 @@ class AppController():
         else:
             return
 
+'''
 
 import win32con
 import win32gui
@@ -101,3 +102,4 @@ def get_hwnds_for_pid ():
   return hwnds
 
 print(set(get_hwnds_for_pid()))
+'''

@@ -19,7 +19,6 @@ def getFileMetadata(fullPath, metadata):
             file_metadata[attribute] = attr_value
     return file_metadata
 
-
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 path = "C:\\Windows"
 def a(path):
@@ -35,13 +34,11 @@ def a(path):
 a(path)
 
 
-
-
-
 class FtpController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.currentPath = "\\"
+        self.info = []
 
     def startListening(self):
         self.getDrive()
@@ -81,6 +78,7 @@ class FtpController():
 
 
     def getFolderInfo(self, path):
+        self.info = []
         for root, subfolder, files in os.walk(path):
             self.fileList = files
             self.folderList = subfolder         

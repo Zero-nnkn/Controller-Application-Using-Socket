@@ -2,7 +2,6 @@ import threading
 import cv2
 import pickle
 import struct
-import pyautogui
 import numpy as np
 import socket
 from PIL import ImageGrab
@@ -190,5 +189,5 @@ class ScreenShareClient(StreamingClient):
         return frame
 
 
-a = ScreenShareClient("localhost", 5000)
-a.start_stream()
+#a = ScreenShareClient("localhost", 5000)
+#a.start_stream()
