@@ -11,10 +11,10 @@ class PowerController():
             request = self.self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            if request == "shutdow":
+            if request == "shutdown":
                 self.shutdown()
             elif request == "logout":   
-                self.unhookKey()
+                self.logout()
             else: #Quit
                 return
 

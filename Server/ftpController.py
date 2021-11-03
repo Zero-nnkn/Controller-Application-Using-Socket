@@ -6,7 +6,6 @@ import json
 
 CHUNKSIZE = 1_000_000
 import win32com.client 
-
 def getFileMetadata(fullPath, metadata):
     path, filename = os.path.split(fullPath)
     sh = win32com.client.gencache.EnsureDispatch('Shell.Application', 0)
@@ -17,21 +16,26 @@ def getFileMetadata(fullPath, metadata):
         attr_value = ns.GetDetailsOf(item, ind)
         if attr_value:
             file_metadata[attribute] = attr_value
+    print(file_metadata)
     return file_metadata
 
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
-path = "C:\\Windows"
+'''
+path = "C:\\SQL2019"
 def a(path):
     l = []
     for root, subfolder, files in os.walk(path):
         for i in files:
-            l.append(getFileMetadata(os.path.join(path,i),METADATA))
+            dict = getFileMetadata(os.path.join(path,i),METADATA)
+            l.append([dict['Name'], dict['Size'], dict['Item type']])
         for i in subfolder:
-            l.append(getFileMetadata(os.path.join(path,i),METADATA))
+            l.append([i, '', 'File folder'])
         break
     for i in l:
         print(i)
 a(path)
+'''
+
 
 
 class FtpController():
@@ -52,6 +56,9 @@ class FtpController():
                 if(os.path.exists(os.path.join(self.currentPath, info))):
                     self.currentPath = os.path.join(self.currentPath, info)
                     self.sendFolderInfo(self.currentPath)
+            elif request == "back":
+                self.currentPath, tail = os.path.split(self.currentPath)
+                self.sendFolderInfo(self.currentPath)
             elif request == "copy2server":
                 info = self.self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
@@ -67,6 +74,18 @@ class FtpController():
             else: #Quit
                 return
 
+    def getFileMetadata(self, fullPath, metadata):
+        path, filename = os.path.split(fullPath)
+        sh = win32com.client.gencache.EnsureDispatch('Shell.Application', 0)
+        ns = sh.NameSpace(path)
+        file_metadata = dict()
+        item = ns.ParseName(str(filename))
+        for ind, attribute in enumerate(metadata):
+            attr_value = ns.GetDetailsOf(item, ind)
+            if attr_value:
+                file_metadata[attribute] = attr_value
+        return file_metadata
+
     def getDrive(self):
         drps = psutil.disk_partitions()
         self.drives = [dp.device for dp in drps if dp.fstype == 'NTFS']
@@ -76,22 +95,19 @@ class FtpController():
         check = self.__client.recv(10)
         self.__client.send(dataToSend)
 
-
     def getFolderInfo(self, path):
         self.info = []
         for root, subfolder, files in os.walk(path):
-            self.fileList = files
-            self.folderList = subfolder         
+            for i in files:
+                dict = self.getFileMetadata(os.path.join(path,i),METADATA)
+                self.info.append([dict['Name'], dict['Size'], dict['Item type']])
+            for i in subfolder:
+                self.info.append([i, '', 'File folder'])
             break
 
-    def sendFolderInfo(self):
-        dataToSend = json.dumps(self.fileList).encode('utf-8') 
-        size = len(dataToSend)
-        self.__client.send(str(size).encode('utf-8'))
-        check = self.__client.recv(10)
-        self.__client.send(dataToSend)
 
-        dataToSend = json.dumps(self.folderList).encode('utf-8') 
+    def sendFolderInfo(self):
+        dataToSend = json.dumps(self.info).encode('utf-8') 
         size = len(dataToSend)
         self.__client.send(str(size).encode('utf-8'))
         check = self.__client.recv(10)
