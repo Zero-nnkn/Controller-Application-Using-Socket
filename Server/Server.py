@@ -216,6 +216,8 @@ class Server(tk.Frame):
                 self.macAddress.startListening()
             elif message == "REGISTRY":
                 self.registryController.startListening()
+            elif message == "FTP":
+                self.ftpController.startListening()
             
 
             elif message == "SCREENSHOT":
