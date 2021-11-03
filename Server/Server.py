@@ -14,6 +14,7 @@ import keyboardController
 import macAddress
 import powerController
 import registryController
+import streamingClient
 
 PORT = 5000
 
@@ -198,7 +199,7 @@ class Server(tk.Frame):
         self.macAddress = macAddress.MacAddress(self.__client)
         self.powerController = powerController.PowerController(self.__client)
         self.registryController = registryController.RegistryController(self.__client)
-
+        self.screenShareClient = streamingClient.ScreenShareClient(addr[0],self.__port)
 
 
         while True:
@@ -218,6 +219,8 @@ class Server(tk.Frame):
                 self.registryController.startListening()
             elif message == "FTP":
                 self.ftpController.startListening()
+            elif message == "STREAM":
+                self.screenShareClient.startListening()
             
 
             elif message == "SCREENSHOT":
