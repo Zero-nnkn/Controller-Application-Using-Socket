@@ -4,12 +4,64 @@ import pickle
 import struct
 import pyautogui
 import numpy as np
+import socket
+from PIL import ImageGrab
 
-class StreamingServer():
-    def __init__(self, clientSocket):
-        self.__client = clientSocket
+
+class StreamingClient:
+    """
+    Abstract class for the generic streaming client.
+    Attributes
+    ----------
+    Private:
+        __host : str
+            host address to connect to
+        __port : int
+            port to connect to
+        __running : bool
+            inicates if the client is already streaming or not
+        __encoding_parameters : list
+            a list of encoding parameters for OpenCV
+        __client_socket : socket
+            the main client socket
+    Methods
+    -------
+    Private:
+        __client_streaming : main method for streaming the client data
+    Protected:
+        _configure : sets basic configurations (overridden by child classes)
+        _get_frame : returns the frame to be sent to the server (overridden by child classes)
+        _cleanup : cleans up all the resources and closes everything
+    Public:
+        start_stream : starts the client stream in a new thread
+    """
+
+    def __init__(self, host, port):
+        """
+        Creates a new instance of StreamingClient.
+        Parameters
+        ----------
+        host : str
+            host address to connect to
+        port : int
+            port to connect to
+        """
+        self.__host = host
+        self.__port = port
         self._configure()
         self.__running = False
+        self.__client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def startListening(self):
+        request = ""
+        while True:
+            request = self.self.__client.recv(1024).decode("utf-8")
+            if not request:
+                break
+            if request == "stream":
+                self.start_stream()
+            else: #Quit
+                self.stop_stream()
 
     def _configure(self):
         """
@@ -77,7 +129,7 @@ class StreamingServer():
 
 
 
-class ScreenShareServer(StreamingServer):
+class ScreenShareClient(StreamingClient):
     """
     Class for the screen share streaming client.
     Attributes
@@ -105,7 +157,7 @@ class ScreenShareServer(StreamingServer):
         start_stream : starts the screen sharing stream in a new thread
     """
 
-    def __init__(self, clientSocket, x_res=1024, y_res=576):
+    def __init__(self, host, port, x_res=1024, y_res=576):
         """
         Creates a new instance of ScreenShareClient.
         Parameters
@@ -121,7 +173,7 @@ class ScreenShareServer(StreamingServer):
         """
         self.__x_res = x_res
         self.__y_res = y_res
-        super(ScreenShareServer, self).__init__(clientSocket)
+        super(ScreenShareClient, self).__init__(host, port)
 
     def _get_frame(self):
         """
@@ -130,16 +182,13 @@ class ScreenShareServer(StreamingServer):
         -------
         frame : the next screenshot frame to be processed
         """
-        screen = pyautogui.screenshot()
+        screen = ImageGrab.grab() #pyautogui.screenshot()
         frame = np.array(screen)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = cv2.resize(frame, (self.__x_res, self.__y_res), interpolation=cv2.INTER_AREA)
+
         return frame
 
 
-import socket
-sock = socket.socket()
-sock.connect(('localhost',5000))
-
-b = streamingServer(sock)
-b.start_stream()
+a = ScreenShareClient("localhost", 5000)
+a.start_stream()

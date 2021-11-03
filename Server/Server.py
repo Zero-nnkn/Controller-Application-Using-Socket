@@ -14,7 +14,6 @@ import keyboardController
 import macAddress
 import powerController
 import registryController
-import streamingServer
 
 PORT = 5000
 
@@ -199,7 +198,7 @@ class Server(tk.Frame):
         self.macAddress = macAddress.MacAddress(self.__client)
         self.powerController = powerController.PowerController(self.__client)
         self.registryController = registryController.RegistryController(self.__client)
-        self.streamingServer = streamingServer.StreamingServer(self.__client)
+
 
 
         while True:

@@ -40,21 +40,9 @@ class MacAddress():
         check = self.__client.recv(10)
         self.__client.sendall(dataToSend)
 
-def getMacAddresses():
-    for interface, snics in psutil.net_if_addrs().items():
-        ip = None
-        mac = None
-        netmask = None
-        for snic in snics:
-            if snic.family == socket.AF_INET:
-                ip = snic.address
-                netmask = snic.netmask
-            if snic.family == psutil.AF_LINK:
-                mac = snic.address
-        yield (interface, mac, ip, netmask)
 
-for i in getMacAddresses():
-    print(i)
+
+
 
         
 

@@ -5,13 +5,43 @@ import shutil
 import json
 
 CHUNKSIZE = 1_000_000
+import win32com.client 
+
+def getFileMetadata(fullPath, metadata):
+    path, filename = os.path.split(fullPath)
+    sh = win32com.client.gencache.EnsureDispatch('Shell.Application', 0)
+    ns = sh.NameSpace(path)
+    file_metadata = dict()
+    item = ns.ParseName(str(filename))
+    for ind, attribute in enumerate(metadata):
+        attr_value = ns.GetDetailsOf(item, ind)
+        if attr_value:
+            file_metadata[attribute] = attr_value
+    return file_metadata
+
+
+METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
+path = "C:\\Windows"
+def a(path):
+    l = []
+    for root, subfolder, files in os.walk(path):
+        for i in files:
+            l.append(getFileMetadata(os.path.join(path,i),METADATA))
+        for i in subfolder:
+            l.append(getFileMetadata(os.path.join(path,i),METADATA))
+        break
+    for i in l:
+        print(i)
+a(path)
+
+
+
+
 
 class FtpController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
         self.currentPath = "\\"
-        self.fileList = []
-        self.folderList = []
 
     def startListening(self):
         self.getDrive()
@@ -90,7 +120,7 @@ class FtpController():
         else:
             return
 
-    def recvData(self, desPath, flag):
+    def recvData(self, path):
         if(os.path.isfile(path)):
             self.recvFile(path)
         elif(os.path.isdir(path)):
@@ -128,7 +158,7 @@ class FtpController():
                 self.sendFile(fullPath, relpath)
 
     def recvFolder(self, desPath):
-        with sock,sock.makefile('rb') as clientfile:
+        with self.__client, self.__client.makefile('rb') as clientfile:
             while True:
                 raw = clientfile.readline()
                 if not raw: break # no more files, server closed connection.
@@ -177,37 +207,3 @@ class FtpController():
 
 
 
-import socket
-
-def sendFile(fullPath, relpath):
-    filesize = os.path.getsize(fullPath)
-    sock.sendall(relpath.encode() + b'\n')
-    sock.sendall(str(filesize).encode() + b'\n')
-
-    with open(fullPath,'rb') as f:
-    # Send the file in chunks so large files can be handled.
-        while True:
-            data = f.read(CHUNKSIZE)
-            if not data: break
-            sock.sendall(data)
-
-sock = socket.socket()
-sock.bind(('',5000))
-sock.listen(1)
-PATH = "C:\\Users\\COMPUTER\\Desktop\\Fruit"
-
-while True:
-    print('Waiting for a client...')
-    client,address = sock.accept()
-    print(f'Client joined from {address}')
-    with client:
-        for path,dirs,files in os.walk(PATH):
-            for file in files:
-                filename = os.path.join(path,file)
-                relpath = os.path.relpath(filename,PATH)
-
-                print(f'Sending {relpath}')
-
-                sendFile(filename,relpath)
-
-        print('Done.')
