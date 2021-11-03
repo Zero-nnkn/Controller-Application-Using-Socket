@@ -18,7 +18,7 @@ import struct
 import threading
 
 
-PORT = 106
+PORT = 5001
 
 clientSocket = None
 a = None
@@ -230,7 +230,7 @@ class Client(tk.Frame):
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
             s = "STREAMING"
-        print(s)
+        clientSocket.send(s.encode('utf-8'))
 
 
     def butConnectClick(self, event = None):
@@ -407,7 +407,7 @@ class Client(tk.Frame):
 
     #TAB7 STREAM
     def butStartRecording(event):
-        a = StreamingServer("localhost", 5001)
+        a = StreamingServer("localhost", PORT)
         a.start_server()        
 
 
@@ -739,7 +739,7 @@ class Client(tk.Frame):
         self.tab7.main_label.configure(bg="black",bd=2)
 
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Recording",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
-        self.tab7.butStartRecording["command"] = self.butShutDownClick
+        self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=200, y=400, height=50, width=100)
 
 
