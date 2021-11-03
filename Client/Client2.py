@@ -342,7 +342,6 @@ class Client(tk.Frame):
             self.tab3.popup1.selection = self.tab3.tv1.set(self.tab3.tv1.identify_row(event.y))
             self.tab3.popup1.post(event.x_root, event.y_root)
         finally:
-            # make sure to release the grab (Tk 8.0a1 only)
             self.tab3.popup1.grab_release()
 
     def do_popup2(self,event):
@@ -350,13 +349,12 @@ class Client(tk.Frame):
             self.tab3.popup2.selection = self.tab3.tv2.set(self.tab3.tv2.identify_row(event.y))
             self.tab3.popup2.post(event.x_root, event.y_root)
         finally:
-            # make sure to release the grab (Tk 8.0a1 only)
             self.tab3.popup2.grab_release()
 
     def copyToServer(self):
 
 
-        print (self.tab3.popup1.selection)
+        print (self.tab3.popup1.selection["1"])
 
     def deleteFile(self):
 
@@ -418,14 +416,18 @@ class Client(tk.Frame):
 
     #--------------------TAB6 POWER----------------------------------------
     def butLogOutClick(self,event=None):
-        
-        
-        a=None
+        if not self.checkConnected():
+           return
+        s = "logout"
+        clientSocket.send(s.encode('utf-8'))
+        messagebox.showinfo("", "The server logged out successfully.")
 
     def butShutDownClick(self,event=None):
-        
-        
-        a=None
+        if not self.checkConnected():
+           return
+        s = "shutdown"
+        clientSocket.send(s.encode('utf-8'))
+        messagebox.showinfo("", "Server shut down after 60s.")
 
 
 
