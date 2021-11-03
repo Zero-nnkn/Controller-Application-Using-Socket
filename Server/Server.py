@@ -17,12 +17,14 @@ import registryController
 import streamingClient
 
 PORT = 5000
+PORT_STREAM = 5500
 
 class Server(tk.Frame):
     def __init__(self, master = None):
         self.__running = False
         self.__host = ''
         self.__port = PORT
+        self.__portStream = PORT_STREAM
         self.__client = None
         self.__serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__serverSocket.bind((self.__host, self.__port))
@@ -199,7 +201,7 @@ class Server(tk.Frame):
         self.macAddress = macAddress.MacAddress(self.__client)
         self.powerController = powerController.PowerController(self.__client)
         self.registryController = registryController.RegistryController(self.__client)
-        self.screenShareClient = streamingClient.ScreenShareClient(addr[0],self.__port)
+        self.screenShareClient = streamingClient.ScreenShareClient(addr[0],self.__portStream)
 
 
         while True:
@@ -221,8 +223,6 @@ class Server(tk.Frame):
                 self.ftpController.startListening()
             elif message == "STREAM":
                 self.screenShareClient.startListening()
-            
-
             elif message == "SCREENSHOT":
                 self.Screenshot()
             elif message == "REGISTRY":
