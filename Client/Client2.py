@@ -1,6 +1,6 @@
-from ctypes import alignment
 import socket
 import tkinter as tk
+
 from tkinter import Label, ttk
 from tkinter import Image, messagebox
 from tkinter import END,INSERT
@@ -12,17 +12,17 @@ from PIL import ImageTk
 
 import cv2
 
-import socket
 import pickle
 import struct
 import threading
 
 
-PORT = 106
+
+PORT = 5000
+PORT_STREAM = 5500
 
 clientSocket = None
-a = None
-
+streamSocket = None
 
 
 
@@ -30,6 +30,7 @@ def CloseButton(root):
     s = "Quit"
     clientSocket.send(s.encode("utf-8"))
     root.destroy()
+
 
 
 class StreamingServer:
@@ -190,7 +191,11 @@ class StreamingServer:
 
 class Client(tk.Frame):
 
-    #GENERAL
+
+
+
+
+    #--------------------GENERAL----------------------------------------
     def __init__(self, root):
             self.root=root
             self.root.title("SUPER CONTROLER")
@@ -205,34 +210,6 @@ class Client(tk.Frame):
             return False
         else: return True
 
-    def on_tab_change(self,event=None):
-        #tab = event.widget.tab('current')['text']
-        # if tab == 'Tab1':
-        #     #canvas3.unbind_all() 
-        #     #canvas2.bind_all('<MouseWheel>', lambda event: canvas2.yview_scroll(int(-1 * (event.delta / 120)),"units"))
-        # elif tab == 'Tab2':
-        #     #canvas2.unbind_all()
-        #     #canvas3.bind_all('<MouseWheel>', lambda event: canvas3.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-        #print(tab)
-        s = ""
-        tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
-            s = "APP"
-        elif tabName == "PROCESSES\nCONTROLER":
-            s = "PROCESS"
-        elif tabName == "FTP\nCONTROLER":
-            s = "FTP"
-        elif tabName == "KEYBOARD\nCONTROLER":
-            s = "KEYBOARD"
-        elif tabName == "MAC\n   ADDRESS  ":
-            s = "MACADRESS"
-        elif tabName == "POWER\nCONTROLER":
-            s = "POWER"
-        elif tabName == "STREAMING\nCONTROLER":
-            s = "STREAMING"
-        print(s)
-
-
     def butConnectClick(self, event = None):
         test = True
         global clientSocket
@@ -246,6 +223,8 @@ class Client(tk.Frame):
             test = False
         if test:
             messagebox.showinfo("", "Success")
+            for i in range(0,7):
+                self.tabControl.tab(i,state="normal")
         else:
             messagebox.showinfo("Error", "Not connected to the server")
 
@@ -266,10 +245,31 @@ class Client(tk.Frame):
         #     messagebox.showinfo("Error", "Not connected to the server")
         a=None
 
+    def on_tab_change(self,event=None):
+        s = ""
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            s = "APP"
+        elif tabName == "PROCESSES\nCONTROLER":
+            s = "PROCESS"
+        elif tabName == "FTP\nCONTROLER":
+            s = "FTP"
+        elif tabName == "KEYBOARD\nCONTROLER":
+            s = "KEYBOARD"
+        elif tabName == "MAC\n   ADDRESS  ":
+            s = "MACADRESS"
+        elif tabName == "POWER\nCONTROLER":
+            s = "POWER"
+        elif tabName == "STREAMING\nCONTROLER":
+            s = "STREAMING"
+        clientSocket.sendall(s.encode('utf-8'))
+        print(clientSocket)
 
 
 
-    #TAB1 2 APP PROCESS
+
+
+    #--------------------TAB1 2 APP PROCESS----------------------------------------
     def butRefreshClick(self, event = None):
 
         a=None
@@ -305,7 +305,8 @@ class Client(tk.Frame):
 
 
 
-    #TAB3 FTP
+
+    #--------------------TAB3 FTP----------------------------------------
     def butClientPreviousPathClick(self, event = None):
 
         a= None
@@ -342,7 +343,8 @@ class Client(tk.Frame):
 
 
 
-    #TAB4 KEY
+
+    #--------------------TAB4 KEY----------------------------------------
     def butHookClick(self):
         if not self.checkConnected():
            return
@@ -383,15 +385,16 @@ class Client(tk.Frame):
 
 
 
-    #TAB5 MAC
-
+    #--------------------TAB5 MAC----------------------------------------
     def butGetMACClick(self):
 
         a=None
 
 
 
-    #TAB6 POWER
+
+
+    #--------------------TAB6 POWER----------------------------------------
     def butLogOutClick(self,event=None):
         
         
@@ -405,17 +408,23 @@ class Client(tk.Frame):
 
 
 
-    #TAB7 STREAM
+
+    #--------------------TAB7 STREAM----------------------------------------
     def butStartRecording(event):
-        a = StreamingServer("localhost", 5001)
-        a.start_server()        
+        streamSocket = StreamingServer("localhost", PORT_STREAM)
+        streamSocket.start_server()        
 
 
 
 
 
     def createWidgets(self):
+        
 
+
+
+
+    #--------------------GENERAL----------------------------------------
         self.frame0 = tk.LabelFrame(self.root,bd=1,background="black")
         self.frame0.place(x=0, y=0, height=500, width=120)
 
@@ -456,17 +465,16 @@ class Client(tk.Frame):
         treeViewStyle = ttk.Style(self.frame1)
         treeViewStyle.configure("Treeview", background="black", foreground="white", fieldbackground="black")
         treeViewStyle.configure("Treeview.Heading", font=('Lato', 11, BOLD), background="black", foreground='white')
-        #treeViewStyle.configure("Treeview.Item", font=('Lato', 12), background="black", foreground='green')
         
         self.tabControl = ttk.Notebook(self.frame1,style="TNotebook")
         self.tabControl.pack(expand=1,fill="both")
-
-        
-
         self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
         
 
         
+
+
+    #--------------------TAB1----------------------------------------
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
         self.tabControl.add(self.tab1,text="APPS\nCONTROLER")
 
@@ -475,9 +483,6 @@ class Client(tk.Frame):
         self.tab1.tv1 = ttk.Treeview(self.tab1.frame0)
         self.tab1.tv1.place(relheight=1, relwidth=1)
         self.tab1.treescrolly = tk.Scrollbar(self.tab1.frame0, orient="vertical", command=self.tab1.tv1.yview)
-        self.tab1.treescrollx = tk.Scrollbar(self.tab1.frame0, orient="horizontal", command=self.tab1.tv1.xview)
-        self.tab1.tv1.configure(xscrollcommand=self.tab1.treescrollx.set, yscrollcommand=self.tab1.treescrolly.set)
-        self.tab1.treescrollx.pack(side="bottom", fill="x")
         self.tab1.treescrolly.pack(side="right", fill="y")
         self.tab1.tv1["columns"] = ("1", "2", "3")
         self.tab1.tv1["show"] = "headings"
@@ -522,6 +527,7 @@ class Client(tk.Frame):
 
 
 
+    #--------------------TAB2----------------------------------------
         self.tab2 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER") 
 
@@ -530,9 +536,6 @@ class Client(tk.Frame):
         self.tab2.tv1 = ttk.Treeview(self.tab2.frame0)
         self.tab2.tv1.place(relheight=1, relwidth=1)
         self.tab2.treescrolly = tk.Scrollbar(self.tab2.frame0, orient="vertical", command=self.tab2.tv1.yview)
-        self.tab2.treescrollx = tk.Scrollbar(self.tab2.frame0, orient="horizontal", command=self.tab2.tv1.xview)
-        self.tab2.tv1.configure(xscrollcommand=self.tab2.treescrollx.set, yscrollcommand=self.tab2.treescrolly.set)
-        self.tab2.treescrollx.pack(side="bottom", fill="x")
         self.tab2.treescrolly.pack(side="right", fill="y")
         self.tab2.tv1["columns"] = ("1", "2", "3")
         self.tab2.tv1["show"] = "headings"
@@ -577,6 +580,7 @@ class Client(tk.Frame):
 
 
 
+    #--------------------TAB3----------------------------------------
         self.tab3 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLER")
 
@@ -605,9 +609,6 @@ class Client(tk.Frame):
         self.tab3.tv1 = ttk.Treeview(self.tab3.frame0)
         self.tab3.tv1.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame0, orient="vertical", command=self.tab3.tv1.yview)
-        # self.tab3.treescrollx = tk.Scrollbar(self.tab3.frame0, orient="horizontal", command=self.tab3.tv1.xview)
-        # self.tab3.tv1.configure(xscrollcommand=self.tab3.treescrollx.set, yscrollcommand=self.tab3.treescrolly.set)
-        # self.tab3.treescrollx.pack(side="bottom", fill="x")
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv1["columns"] = ("1", "2", "3")
         self.tab3.tv1["show"] = "headings"
@@ -633,9 +634,6 @@ class Client(tk.Frame):
         self.tab3.tv2 = ttk.Treeview(self.tab3.frame1)
         self.tab3.tv2.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame1, orient="vertical", command=self.tab3.tv2.yview)
-        # self.tab3.treescrollx = tk.Scrollbar(self.tab3.frame1, orient="horizontal", command=self.tab3.tv2.xview)
-        # self.tab3.tv2.configure(xscrollcommand=self.tab3.treescrollx.set, yscrollcommand=self.tab3.treescrolly.set)
-        # self.tab3.treescrollx.pack(side="bottom", fill="x")
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv2["columns"] = ("1", "2", "3")
         self.tab3.tv2["show"] = "headings"
@@ -660,6 +658,7 @@ class Client(tk.Frame):
 
 
 
+    #--------------------TAB4----------------------------------------
         self.tab4 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER")
 
@@ -691,6 +690,7 @@ class Client(tk.Frame):
 
 
 
+    #--------------------TAB5----------------------------------------
         self.tab5 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ")
 
@@ -709,10 +709,7 @@ class Client(tk.Frame):
 
 
 
-
-
-
-
+    #--------------------TAB6----------------------------------------
         self.tab6 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLER")
 
@@ -728,21 +725,25 @@ class Client(tk.Frame):
 
 
 
+    #--------------------TAB7----------------------------------------
         self.tab7 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER")
 
-        
-
         self.tab7.main_label = Label(self.tab7)
         self.tab7.main_label.grid()
-        self.tab7.main_label.place(x=0,y=0,height=400,width=500)
-        self.tab7.main_label.configure(bg="black",bd=2)
+        self.tab7.main_label.place(x=0,y=0,height=380,width=500)
+        self.tab7.main_label.configure(bg="red",bd=2)
 
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Recording",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
-        self.tab7.butStartRecording["command"] = self.butShutDownClick
+        self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=200, y=400, height=50, width=100)
 
 
+
+
+    #------------------------------------------------------------
+        for i in range(0,7):
+            self.tabControl.tab(i,state="disabled")
 
 
 root=tk.Tk()
