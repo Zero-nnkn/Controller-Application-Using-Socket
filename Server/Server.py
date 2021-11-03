@@ -210,7 +210,7 @@ class Server(tk.Frame):
             message = buffer.decode('utf-8')
             if message == "POWER":
                 self.powerController.startListening()
-            elif message == "KEYBOARDCONTROLLER":
+            elif message == "KEYBOARD":
                 self.keyboardController.startListening()
             elif message == "MACADDRESS":
                 self.macAddress.startListening()
