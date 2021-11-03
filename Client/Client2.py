@@ -1,26 +1,192 @@
 from ctypes import alignment
 import socket
 import tkinter as tk
-from tkinter import ttk
+from tkinter import Label, ttk
 from tkinter import Image, messagebox
 from tkinter import END,INSERT
 from tkinter.constants import ANCHOR, CENTER, VERTICAL
 from tkinter.font import BOLD
-from typing import Text
 
 from PIL import Image
 from PIL import ImageTk
 
-from tab1widget import createTab1Widget
+import cv2
+
+import socket
+import pickle
+import struct
+import threading
+
 
 PORT = 106
 
 clientSocket = None
+a = None
+
+
+
 
 def CloseButton(root):
     s = "Quit"
     clientSocket.send(s.encode("utf-8"))
     root.destroy()
+
+
+class StreamingServer:
+    """
+    Class for the streaming server.
+    Attributes
+    ----------
+    Private:
+        __host : str
+            host address of the listening server
+        __port : int
+            port on which the server is listening
+        __slots : int
+            amount of maximum avaialable slots (not ready yet)
+        __used_slots : int
+            amount of used slots (not ready yet)
+        __quit_key : chr
+            key that has to be pressed to close connection
+        __running : bool
+            inicates if the server is already running or not
+        __block : Lock
+            a basic lock used for the synchronization of threads
+        __server_socket : socket
+            the main server socket
+    Methods
+    -------
+    Private:
+        __init_socket : method that binds the server socket to the host and port
+        __server_listening: method that listens for new connections
+        __client_connection : main method for processing the client streams
+    Public:
+        start_server : starts the server in a new thread    
+        stop_server : stops the server and closes all connections
+    """
+
+    # TODO: Implement slots functionality
+    def __init__(self, host, port, quit_key='q'):
+        """
+        Creates a new instance of StreamingServer
+        Parameters
+        ----------
+        host : str
+            host address of the listening server
+        port : int
+            port on which the server is listening
+        slots : int
+            amount of avaialable slots (not ready yet) (default = 8)
+        quit_key : chr
+            key that has to be pressed to close connection (default = 'q')  
+        """
+        self.__host = host
+        self.__port = port
+        self.__running = False
+        self.__quit_key = quit_key
+        self.__block = threading.Lock()
+        self.__server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__init_socket()
+
+    def __init_socket(self):
+        """
+        Binds the server socket to the given host and port
+        """
+        self.__server_socket.bind((self.__host, self.__port))
+
+    def start_server(self):
+        """
+        Starts the server if it is not running already.
+        """
+        if self.__running:
+            print("Server is already running")
+        else:
+            self.__running = True
+            server_thread = threading.Thread(target=self.__server_listening)
+            server_thread.start()
+
+    def __server_listening(self):
+        """
+        Listens for new connections.
+        """
+        self.__server_socket.listen()
+        while self.__running:
+            self.__block.acquire()
+            connection, address = self.__server_socket.accept()
+
+            self.__block.release()
+            thread = threading.Thread(target=self.__client_connection, args=(connection, address,))
+            thread.start()
+
+    def stop_server(self):
+        """
+        Stops the server and closes all connections
+        """
+        if self.__running:
+            self.__running = False
+            closing_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            closing_connection.connect((self.__host, self.__port))
+            closing_connection.close()
+            self.__block.acquire()
+            self.__server_socket.close()
+            self.__block.release()
+        else:
+            print("Server not running!")
+
+    def __client_connection(self, connection, address):
+        """
+        Handles the individual client connections and processes their stream data.
+        """
+        payload_size = struct.calcsize('>L')
+        data = b""
+
+        while self.__running:
+
+            break_loop = False
+
+            while len(data) < payload_size:
+                received = connection.recv(4096)
+                if received == b'':
+                    connection.close()
+                    break_loop = True
+                    break
+                data += received
+
+            if break_loop:
+                break
+
+            packed_msg_size = data[:payload_size]
+            data = data[payload_size:]
+
+            msg_size = struct.unpack(">L", packed_msg_size)[0]
+
+            while len(data) < msg_size:
+                data += connection.recv(4096)
+
+            frame_data = data[:msg_size]
+            data = data[msg_size:]
+
+            frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
+            frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+
+            #----------TO DO----------
+            # Thay vì show lên cv2 thì show lên tkinter
+            # Tạo 1 cửa sổ mới như lúc call mess
+            # Tắt cửa sổ thì gọi hàm stop_server và gửi "quit"
+            '''
+            cv2.imshow(str(address), frame)
+            if cv2.waitKey(1) == ord(self.__quit_key):
+                connection.close()
+                break
+
+            '''
+            global canvas
+            img = ImageTk.PhotoImage(Image.fromarray(frame))  
+            self.tab7.main_label.configure(image=img) 
+            self.tab7.main_label.image = img
+
+            #----------TO DO----------
+
 
 class Client(tk.Frame):
 
@@ -48,8 +214,25 @@ class Client(tk.Frame):
         #     #canvas2.unbind_all()
         #     #canvas3.bind_all('<MouseWheel>', lambda event: canvas3.yview_scroll(int(-1 * (event.delta / 120)), "units"))
         #print(tab)
-        print(self.tabControl.tab(self.tabControl.select(),"text"))
-       
+        s = ""
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            s = "APP"
+        elif tabName == "PROCESSES\nCONTROLER":
+            s = "PROCESS"
+        elif tabName == "FTP\nCONTROLER":
+            s = "FTP"
+        elif tabName == "KEYBOARD\nCONTROLER":
+            s = "KEYBOARD"
+        elif tabName == "MAC\n   ADDRESS  ":
+            s = "MACADRESS"
+        elif tabName == "POWER\nCONTROLER":
+            s = "POWER"
+        elif tabName == "STREAMING\nCONTROLER":
+            s = "STREAMING"
+        print(s)
+
+
     def butConnectClick(self, event = None):
         test = True
         global clientSocket
@@ -223,6 +406,13 @@ class Client(tk.Frame):
 
 
     #TAB7 STREAM
+    def butStartRecording(event):
+        a = StreamingServer("localhost", 5001)
+        a.start_server()        
+
+
+
+
 
     def createWidgets(self):
 
@@ -526,13 +716,13 @@ class Client(tk.Frame):
         self.tab6 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLER")
 
-        self.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
-        self.butLogOut["command"] = self.butLogOutClick
-        self.butLogOut.place(x=10, y=10, height=30, width=100)
+        self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab6.butLogOut["command"] = self.butLogOutClick
+        self.tab6.butLogOut.place(x=10, y=10, height=30, width=100)
 
-        self.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg="red",fg="white",justify="center",cursor="circle")
-        self.butShutDown["command"] = self.butShutDownClick
-        self.butShutDown.place(x=10, y=50, height=30, width=100)
+        self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg="red",fg="white",justify="center",cursor="circle")
+        self.tab6.butShutDown["command"] = self.butShutDownClick
+        self.tab6.butShutDown.place(x=10, y=50, height=30, width=100)
 
 
 
@@ -540,6 +730,18 @@ class Client(tk.Frame):
 
         self.tab7 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER")
+
+        
+
+        self.tab7.main_label = Label(self.tab7)
+        self.tab7.main_label.grid()
+        self.tab7.main_label.place(x=0,y=0,height=400,width=500)
+        self.tab7.main_label.configure(bg="black",bd=2)
+
+        self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Recording",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab7.butStartRecording["command"] = self.butShutDownClick
+        self.tab7.butStartRecording.place(x=200, y=400, height=50, width=100)
+
 
 
 
