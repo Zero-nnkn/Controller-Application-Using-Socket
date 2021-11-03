@@ -14,7 +14,7 @@ class PowerController():
             if request == "shutdown":
                 self.shutdown()
             elif request == "logout":   
-                self.unhookKey()
+                self.logout()
             else: #Quit
                 return
 
