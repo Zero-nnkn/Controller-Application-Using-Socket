@@ -211,26 +211,23 @@ class Server(tk.Frame):
             if not buffer:
                 break
             message = buffer.decode('utf-8')
-            if message == "POWER":
-                self.powerController.startListening()
+
+            if message == "APP":
+                self.appController.startListening()
+            elif message == "PROCESS":
+                self.processController.startListening()
+            elif message == "FTP":
+                self.ftpController.startListening()
             elif message == "KEYBOARD":
                 self.keyboardController.startListening()
             elif message == "MACADDRESS":
                 self.macAddress.startListening()
+            elif message == "POWER":
+                self.powerController.startListening()
             elif message == "REGISTRY":
                 self.registryController.startListening()
-            elif message == "FTP":
-                self.ftpController.startListening()
             elif message == "STREAM":
                 self.screenShareClient.startListening()
-            elif message == "SCREENSHOT":
-                self.Screenshot()
-            elif message == "REGISTRY":
-                self.Registry()
-            elif message == "APP":
-                self.AppRunning()
-            elif message == "PROCESS":
-                self.ProcessRunning()
             elif message == 'EXIT':
                 root.destroy()
                 break
