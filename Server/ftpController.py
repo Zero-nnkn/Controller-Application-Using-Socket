@@ -46,11 +46,11 @@ class FtpController():
         self.senDrive()
         request = ""
         while True:
-            request = self.self.__client.recv(1024).decode("utf-8")
+            request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
             if request=="view":
-                info = self.self.__client.recv(1024).decode("utf-8")
+                info = self.__client.recv(1024).decode("utf-8")
                 if(os.path.exists(os.path.join(self.currentPath, info))):
                     self.currentPath = os.path.join(self.currentPath, info)
                     self.sendFolderInfo(self.currentPath)
@@ -62,15 +62,15 @@ class FtpController():
                     self.currentPath, tail = os.path.split(self.currentPath)
                     self.sendFolderInfo(self.currentPath)
             elif request == "copy2server":
-                info = self.self.__client.recv(1024).decode("utf-8")
+                info = self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
                 self.recvData(fullPath)
             elif request == "copy2client":
-                info = self.self.__client.recv(1024).decode("utf-8")
+                info = self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
                 self.sendData(fullPath)
             elif request == "delete":
-                info = self.self.__client.recv(1024).decode("utf-8")
+                info = self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
                 self.deleteData(fullPath)
             else: #Quit

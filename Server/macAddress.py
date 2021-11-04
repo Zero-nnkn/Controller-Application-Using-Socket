@@ -11,7 +11,7 @@ class MacAddress():
     def startListening(self):
         request = ""
         while True:
-            request = self.self.__client.recv(1024).decode("utf-8")
+            request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
             if request == "macaddress":
