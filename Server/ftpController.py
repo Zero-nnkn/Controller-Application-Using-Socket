@@ -36,8 +36,6 @@ def a(path):
 a(path)
 '''
 
-
-
 class FtpController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
@@ -145,12 +143,15 @@ class FtpController():
             return
 
     def recvData(self, path):
+        self.recvFolder(path)
+        '''
         if(os.path.isfile(path)):
             self.recvFile(path)
         elif(os.path.isdir(path)):
             self.recvFolder(path)
         else:
             return
+        '''
 
 
     def sendFile(self, fullPath, relpath):
