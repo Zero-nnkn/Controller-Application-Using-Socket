@@ -15,7 +15,7 @@ import cv2
 import pickle
 import struct
 import threading
-
+import json
 
 
 PORT = 5000
@@ -206,29 +206,11 @@ class Client(tk.Frame):
 
     def checkConnected(self):
         if clientSocket == None:
-            messagebox.showinfo("Error", "Not connected to the server")
+            messagebox.showinfo("Error", "Connection lost")
             return False
         else: return True
 
     def butConnectClick(self, event = None):
-        test = True
-        global clientSocket
-        try:
-            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.host = self.ipConnect.get().strip()
-            clientSocket.connect((self.host,PORT))
-        except:
-            print ("Fail to connect with the socket-server")
-            clientSocket= None
-            test = False
-        if test:
-            messagebox.showinfo("", "Success")
-            for i in range(0,7):
-                self.tabControl.tab(i,state="normal")
-        else:
-            messagebox.showinfo("Error", "Not connected to the server")
-
-    def butDisconnectClick(self, event = None):
         # test = True
         # global clientSocket
         # try:
@@ -241,9 +223,22 @@ class Client(tk.Frame):
         #     test = False
         # if test:
         #     messagebox.showinfo("", "Success")
+        #     for i in range(0,7):
+        #         self.tabControl.tab(i,state="normal")
+        #     self.tabControl.select(0)
+        #     self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
         # else:
         #     messagebox.showinfo("Error", "Not connected to the server")
-        a=None
+        for i in range(0,7):
+            self.tabControl.tab(i,state="normal")
+        self.tabControl.select(0)
+        self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+
+    def butDisconnectClick(self, event = None):
+        s = "EXIT"
+        clientSocket.send(s.encode('utf-8'))
+        for i in range(0,7):
+                self.tabControl.tab(i,state="disabled")
 
     def on_tab_change(self,event=None):
         s = ""
@@ -262,44 +257,71 @@ class Client(tk.Frame):
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
             s = "STREAMING"
-        clientSocket.sendall(s.encode('utf-8'))
+        #clientSocket.sendall(s.encode('utf-8'))
         print(clientSocket)
+        print(s)
 
 
 
 
 
     #--------------------TAB1 2 APP PROCESS----------------------------------------
+    def butDelTreeClick(tree):
+        rows = tree.get_children()
+        if rows != '()':
+            for row in rows:
+                tree.delete(row)
+    
     def butRefreshClick(self, event = None):
-
-        a=None
+        if not self.checkConnected():
+           return
+        s = "View"
+        clientSocket.send(s.encode('utf-8'))
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            tab = self.tab1
+        elif tabName == "PROCESSES\nCONTROLER":
+            tab = self.tab2
+        tab.data = []
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        tab.data = json.loads(buffer.decode("utf-8"))
+        tab.tv1.butDelTreeClick()
+        rows = tab.data
+        for row in rows:
+            tab.tv1.insert("", "end", values=row)
 
     def butKillClick(self, event = None):
-            # if not self.checkConnected():
-            #    return
-            # s = "KillID"
-            # clientSocket.send(s.encode('utf-8'))
-            # s = self.ID.get().strip()
-            # clientSocket.send(s.encode('utf-8'))
-            # buffer = clientSocket.recv(4096)
-            # if not buffer:
-            #     return
-            # message = buffer.decode('utf-8')
-            # messagebox.showinfo("", message,parent = self)
-            a = None
+        if not self.checkConnected():
+            return
+        s = "KillID"
+        clientSocket.send(s.encode('utf-8'))
+        s = self.ID.get().strip()
+        clientSocket.send(s.encode('utf-8'))
+        buffer = clientSocket.recv(4096)
+        if not buffer:
+            return
+        message = buffer.decode('utf-8')
+        messagebox.showinfo("", message,parent = self)
+        a = None
 
     def butStartClick(self, event = None):
-        # if not self.checkConnected():
-        #     return
-        # s = "StartID"
-        # clientSocket.send(s.encode('utf-8'))
-        # s = self.ID.get().strip()
-        # clientSocket.send(s.encode('utf-8'))
-        # buffer = clientSocket.recv(4096)
-        # if not buffer:
-        #     return
-        # message = buffer.decode('utf-8')
-        # messagebox.showinfo("", message, parent = self)
+        if not self.checkConnected():
+            return
+        s = "StartID"
+        clientSocket.send(s.encode('utf-8'))
+        s = self.ID.get().strip()
+        clientSocket.send(s.encode('utf-8'))
+        buffer = clientSocket.recv(4096)
+        if not buffer:
+            return
+        message = buffer.decode('utf-8')
+        messagebox.showinfo("", message, parent = self)
         a = None
 
 
@@ -320,25 +342,23 @@ class Client(tk.Frame):
             self.tab3.popup1.selection = self.tab3.tv1.set(self.tab3.tv1.identify_row(event.y))
             self.tab3.popup1.post(event.x_root, event.y_root)
         finally:
-            # make sure to release the grab (Tk 8.0a1 only)
             self.tab3.popup1.grab_release()
 
     def do_popup2(self,event):
         try:
-            self.tab3.popup2.selection = self.tab3.tv1.set(self.tab3.tv1.identify_row(event.y))
+            self.tab3.popup2.selection = self.tab3.tv2.set(self.tab3.tv2.identify_row(event.y))
             self.tab3.popup2.post(event.x_root, event.y_root)
         finally:
-            # make sure to release the grab (Tk 8.0a1 only)
             self.tab3.popup2.grab_release()
 
     def copyToServer(self):
 
 
-        print (self.tab3.popup1.selection)
+        print (self.tab3.popup1.selection["1"])
 
-    def deteteFile(self):
+    def deleteFile(self):
 
-        print (self.tab3.popup1.selection)
+        print (self.tab3.popup2.selection["1"])
 
 
 
@@ -396,14 +416,18 @@ class Client(tk.Frame):
 
     #--------------------TAB6 POWER----------------------------------------
     def butLogOutClick(self,event=None):
-        
-        
-        a=None
+        if not self.checkConnected():
+           return
+        s = "logout"
+        clientSocket.send(s.encode('utf-8'))
+        messagebox.showinfo("", "The server logged out successfully.")
 
     def butShutDownClick(self,event=None):
-        
-        
-        a=None
+        if not self.checkConnected():
+           return
+        s = "shutdown"
+        clientSocket.send(s.encode('utf-8'))
+        messagebox.showinfo("", "Server shut down after 60s.")
 
 
 
@@ -468,7 +492,7 @@ class Client(tk.Frame):
         
         self.tabControl = ttk.Notebook(self.frame1,style="TNotebook")
         self.tabControl.pack(expand=1,fill="both")
-        self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        #self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
         
 
         
@@ -492,7 +516,7 @@ class Client(tk.Frame):
         self.tab1.tv1.column(1, width = 100)
         self.tab1.tv1.column(2, width = 75)
         self.tab1.tv1.column(3, width = 75)
-        self.tab1.apps = []
+        self.tab1.data = []
         row=["Google Chorme","0000001","1234567"]
         for i in range(10):
             self.tab1.tv1.insert("", "end", values=row, tags="a")
@@ -545,7 +569,7 @@ class Client(tk.Frame):
         self.tab2.tv1.column(1, width = 100)
         self.tab2.tv1.column(2, width = 75)
         self.tab2.tv1.column(3, width = 75)
-        self.tab2.processes = []
+        self.tab2.data = []
         row=["Coc Coc","0000002","4348398"]
         for i in range(10):
             self.tab2.tv1.insert("", "end", values=row, tags="a")
@@ -644,13 +668,13 @@ class Client(tk.Frame):
         self.tab3.tv2.column(2, width = 40)
         self.tab3.tv2.column(3, width = 40)
         self.tab3.serverFolder = []
-        row=["Google Chorme","0000001","1234567"]
+        row=["Coc Coc","0000001","1234567"]
         for i in range(10):
             self.tab3.tv2.insert("", "end", values=row, tags="a")
             self.tab3.tv2.tag_configure("a", background="black", foreground="white")
 
         self.tab3.popup2 = tk.Menu(self.tab3, tearoff=0)
-        self.tab3.popup2.add_command(label="Delete", command=self.copyToServer)
+        self.tab3.popup2.add_command(label="Delete", command=self.deleteFile)
         self.tab3.popup2.add_separator()
         self.tab3.tv2.bind("<Button-3>", self.do_popup2)
 
