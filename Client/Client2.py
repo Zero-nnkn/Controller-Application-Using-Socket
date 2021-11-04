@@ -197,6 +197,9 @@ class StreamingServer:
             #----------TO DO----------
 
 
+
+
+
 class Client(tk.Frame):
 
 
@@ -605,6 +608,7 @@ class Client(tk.Frame):
            return
         s = "macaddress"
         clientSocket.send(s.encode('utf-8'))
+        print(1)
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
         self.tab5.MACs = []
@@ -642,7 +646,9 @@ class Client(tk.Frame):
 
 
     #--------------------TAB7 STREAM----------------------------------------
-    def butStartRecording(event):
+    def butStartRecording(self):
+        if not self.checkConnected():
+           return
         streamSocket = StreamingServer("localhost", PORT_STREAM)
         streamSocket.start_server()        
 
@@ -962,7 +968,7 @@ class Client(tk.Frame):
         self.tab7.main_label = Label(self.tab7)
         self.tab7.main_label.grid()
         self.tab7.main_label.place(x=0,y=0,height=380,width=500)
-        self.tab7.main_label.configure(bg="red",bd=2)
+        self.tab7.main_label.configure(bg="grey",bd=2)
 
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Recording",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab7.butStartRecording["command"] = self.butStartRecording
