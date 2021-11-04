@@ -619,10 +619,11 @@ class Client(tk.Frame):
         self.tab5.MACs = json.loads(buffer.decode("utf-8"))
         self.tab5.MACView.delete('1.0', END)
         for MAC in self.tab5.MACs:
-            for item in MAC:
-                self.tab5.MACView.insert(INSERT, item)
-                self.tab5.MACView.insert(INSERT, "\t")
-            self.tab5.MACView.insert(INSERT, "\n\n")
+            self.tab5.MACView.insert(INSERT, MAC[0] + "\n\n")
+            self.tab5.MACView.insert(INSERT, "\tPhysical Address:\t\t" + MAC[1] + "\n")
+            self.tab5.MACView.insert(INSERT, "\tIPv4 Address:\t\t" + MAC[2] + "\n")
+            self.tab5.MACView.insert(INSERT, "\tSubnet Mask:\t\t" + MAC[3] + "\n")
+            self.tab5.MACView.insert(INSERT, "\n\n\n")
 
 
 
@@ -671,7 +672,7 @@ class Client(tk.Frame):
         self.frame1 = tk.LabelFrame(self.root,bd=1,background="black")
         self.frame1.place(x=120, y=0, height=503, width=883)
 
-        img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\logo.png")
+        img = Image.open("Client\\logo.png")
         self.img=ImageTk.PhotoImage(img)
         self.theme=tk.Label(self.frame0,image=self.img,background="black")
         self.theme.place(x=25, y=45)
@@ -715,7 +716,7 @@ class Client(tk.Frame):
 
     #--------------------TAB1----------------------------------------APP
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
-        tab1Img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\\tab1.png")
+        tab1Img = Image.open("Client\\tab1.png")
         tab1Img = tab1Img.resize((40,40))
         self.tab1.img = ImageTk.PhotoImage(tab1Img)
         self.tabControl.add(self.tab1,text="APPS\nCONTROLER",image=self.tab1.img,compound=tk.TOP)
@@ -769,7 +770,7 @@ class Client(tk.Frame):
 
     #--------------------TAB2----------------------------------------PROCESS
         self.tab2 = ttk.Frame(self.tabControl)
-        tab2Img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\\tab2.png")
+        tab2Img = Image.open("Client\\tab2.png")
         tab2Img = tab2Img.resize((40,40))
         self.tab2.img = ImageTk.PhotoImage(tab2Img)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER",image=self.tab2.img,compound=tk.TOP) 
