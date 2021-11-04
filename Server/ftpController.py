@@ -45,7 +45,7 @@ class FtpController():
         self.info = []
 
     def startListening(self):
-        self.getDrive()
+        self.senDrive()
         request = ""
         while True:
             request = self.self.__client.recv(1024).decode("utf-8")
@@ -57,8 +57,12 @@ class FtpController():
                     self.currentPath = os.path.join(self.currentPath, info)
                     self.sendFolderInfo(self.currentPath)
             elif request == "back":
-                self.currentPath, tail = os.path.split(self.currentPath)
-                self.sendFolderInfo(self.currentPath)
+                if self.currentPath[-2] == ":":
+                    self.senDrive()
+                    self.currentPath == "\\"
+                else:
+                    self.currentPath, tail = os.path.split(self.currentPath)
+                    self.sendFolderInfo(self.currentPath)
             elif request == "copy2server":
                 info = self.self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
@@ -88,7 +92,11 @@ class FtpController():
 
     def getDrive(self):
         drps = psutil.disk_partitions()
-        self.drives = [dp.device for dp in drps if dp.fstype == 'NTFS']
+        self.drives = [[dp.device, '', 'File folder'] for dp in drps if dp.fstype == 'NTFS']
+
+    def senDrive(self):
+        self.getDrive()
+
         dataToSend = json.dumps(self.drives).encode('utf-8') 
         size = len(dataToSend)
         self.__client.send(str(size).encode('utf-8'))
@@ -106,7 +114,9 @@ class FtpController():
             break
 
 
-    def sendFolderInfo(self):
+    def sendFolderInfo(self,path):
+        self.getFolderInfo(path)
+
         dataToSend = json.dumps(self.info).encode('utf-8') 
         size = len(dataToSend)
         self.__client.send(str(size).encode('utf-8'))
@@ -217,7 +227,6 @@ class FtpController():
                 # socket was closed early.
                 print('Incomplete')
                 break 
-
 
 
 
