@@ -211,6 +211,7 @@ class Client(tk.Frame):
             self.root.resizable(False,False)
             self.root.grab_set()
             self.createWidgets()
+            self.firstChanged = True
 
     def checkConnected(self):
         if clientSocket == None:
@@ -219,28 +220,25 @@ class Client(tk.Frame):
         else: return True
 
     def butConnectClick(self, event = None):
-        # test = True
-        # global clientSocket
-        # try:
-        #     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #     self.host = self.ipConnect.get().strip()
-        #     clientSocket.connect((self.host,PORT))
-        # except:
-        #     print ("Fail to connect with the socket-server")
-        #     clientSocket= None
-        #     test = False
-        # if test:
-        #     messagebox.showinfo("", "Success")
-        #     for i in range(0,7):
-        #         self.tabControl.tab(i,state="normal")
-        #     self.tabControl.select(0)
-        #     self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
-        # else:
-        #     messagebox.showinfo("Error", "Not connected to the server")
-        for i in range(0,7):
-            self.tabControl.tab(i,state="normal")
-        self.tabControl.select(0)
-        self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        test = True
+        global clientSocket
+        try:
+            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.host = self.ipConnect.get().strip()
+            clientSocket.connect((self.host,PORT))
+        except:
+            print ("Fail to connect with the socket-server")
+            clientSocket= None
+            test = False
+        if test:
+            messagebox.showinfo("", "Success")
+            for i in range(0,7):
+                self.tabControl.tab(i,state="normal")
+            self.tabControl.select(0)
+            self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        else:
+            messagebox.showinfo("Error", "Not connected to the server")
+        a=None
 
     def butDisconnectClick(self, event = None):
         s = "EXIT"
@@ -249,7 +247,9 @@ class Client(tk.Frame):
                 self.tabControl.tab(i,state="disabled")
 
     def on_tab_change(self,event=None):
-        s = ""
+        if self.firstChanged == False:
+            clientSocket.send("quit".encode('utf-8'))
+        else: self.firstChanged = False
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
         if tabName == "APPS\nCONTROLER":
             s = "APP"
@@ -265,8 +265,7 @@ class Client(tk.Frame):
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
             s = "STREAMING"
-        #clientSocket.sendall(s.encode('utf-8'))
-        print(clientSocket)
+        clientSocket.send(s.encode('utf-8'))
         print(s)
         if s == "FTP":
             self.gettingStarted()
@@ -282,10 +281,10 @@ class Client(tk.Frame):
             for row in rows:
                 tree.delete(row)
     
-    def butRefreshClick(self, event = None):
+    def butRefreshClick(self):
         if not self.checkConnected():
            return
-        s = "View"
+        s = "view"
         clientSocket.send(s.encode('utf-8'))
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
@@ -311,28 +310,36 @@ class Client(tk.Frame):
             return
         s = "KillID"
         clientSocket.send(s.encode('utf-8'))
-        s = self.ID.get().strip()
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            tab = self.tab1
+        elif tabName == "PROCESSES\nCONTROLER":
+            tab = self.tab2
+        s = tab.killID.get().strip()
         clientSocket.send(s.encode('utf-8'))
         buffer = clientSocket.recv(4096)
         if not buffer:
             return
         message = buffer.decode('utf-8')
         messagebox.showinfo("", message,parent = self)
-        a = None
 
     def butStartClick(self, event = None):
         if not self.checkConnected():
             return
         s = "StartID"
         clientSocket.send(s.encode('utf-8'))
-        s = self.ID.get().strip()
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            tab = self.tab1
+        elif tabName == "PROCESSES\nCONTROLER":
+            tab = self.tab2
+        s = tab.startID.get().strip()
         clientSocket.send(s.encode('utf-8'))
         buffer = clientSocket.recv(4096)
         if not buffer:
             return
         message = buffer.decode('utf-8')
         messagebox.showinfo("", message, parent = self)
-        a = None
 
 
 
@@ -363,7 +370,6 @@ class Client(tk.Frame):
             attr_value = ns.GetDetailsOf(item, ind)
             if attr_value:
                 file_metadata[attribute] = attr_value
-        #print(file_metadata)
         return file_metadata
 
     def getFolderInfo(self, path):
@@ -382,15 +388,17 @@ class Client(tk.Frame):
         for info in infos:
             tree.insert("", "end", values=info)
 
-    def gettingStarted(self):
+    def displayDrive(self):
         drps = psutil.disk_partitions()
         self.tab3.clientPath = ""
-        self.tab3.clientInfos = [dp.device for dp in drps if dp.fstype == 'NTFS']
+        self.tab3.clientInfos = [[dp.device, '', 'File folder'] for dp in drps if dp.fstype == 'NTFS']
         self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
         self.tab3.clientPathtxt.configure(state="normal")
         self.tab3.clientPathtxt.delete('1.0', END)
         self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
 
+    def gettingStarted(self):
+        self.displayDrive()
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
         buffer = "".encode("utf-8")
@@ -408,13 +416,7 @@ class Client(tk.Frame):
     def butClientPreviousPathClick(self, event = None):
         l = len(self.tab3.clientPath)
         if self.tab3.clientPath[l-2:-1] == ":":
-            drps = psutil.disk_partitions()
-            self.tab3.clientPath = ""
-            self.tab3.clientInfos = [dp.device for dp in drps if dp.fstype == 'NTFS']
-            self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
-            self.tab3.clientPathtxt.configure(state="normal")
-            self.tab3.clientPathtxt.delete('1.0', END)
-            self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
+            self.displayDrive()
             return
         elif self.tab3.clientPath =="": return
         self.tab3.clientPath, tail = os.path.split(self.tab3.clientPath)
@@ -426,8 +428,28 @@ class Client(tk.Frame):
         self.tab3.clientPathtxt.configure(state="disabled")
 
     def butServerPreviousPathClick(self, event = None):
-
-        a= None
+        if not self.checkConnected():
+            return
+        s = "back"
+        clientSocket.send(s.encode('utf-8'))
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        l = len(self.tab3.serverPath)
+        if self.tab3.serverPath[l-2:-1] == ":":
+            self.tab3.serverPath = ""
+        else:
+            self.tab3.serverPath, tail = os.path.split(self.tab3.serverPath)
+        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
+        self.tab3.serverPathtxt.configure(state="normal")
+        self.tab3.serverPathtxt.delete('1.0', END)
+        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+        self.tab3.serverPathtxt.configure(state="disabled")
 
     def clientOnDoubleClick(self, event = None):
         item = self.tab3.tv1.selection()[0]
@@ -441,17 +463,45 @@ class Client(tk.Frame):
         self.tab3.clientPathtxt.configure(state="disabled")
 
     def serverOnDoubleClick(self, event = None):
+        if not self.checkConnected():
+            return
+        s = "view"
+        clientSocket.send(s.encode('utf-8'))
         item = self.tab3.tv2.selection()[0]
-        print(self.tab3.tv2.item(item,"value")[0])
+        folderName = self.tab3.tv2.item(item,"value")[0]
+        clientSocket.send(folderName.encode('utf-8'))
+        self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
+        self.tab3.serverPathtxt.configure(state="normal")
+        self.tab3.serverPathtxt.delete('1.0', END)
+        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+        self.tab3.serverPathtxt.configure(state="disabled")
 
     def copyToServer(self):
-
-
-        print (self.tab3.popup1.selection["1"])
+        if not self.checkConnected():
+            return
+        s = "copy2server"
+        clientSocket.send(s.encode('utf-8'))
+        info = self.tab3.popup1.selection["1"]
+        clientSocket.send(info.encode('utf-8'))
+        pathSend = os.path.join(self.tab3.clientPath,info)
+        self.sendData(pathSend)
 
     def deleteFile(self):
-
-        print (self.tab3.popup2.selection["1"])
+        if not self.checkConnected():
+            return
+        s = "delete"
+        clientSocket.send(s.encode('utf-8'))
+        info = self.tab3.popup1.selection["1"]
+        clientSocket.send(info.encode('utf-8'))
 
     def sendData(self, path):
         if(os.path.isfile(path)):
@@ -502,27 +552,29 @@ class Client(tk.Frame):
 
 
 
-
-
-
-
     #--------------------TAB4 KEY----------------------------------------
+    def butLockClick(self):
+        if not self.checkConnected():
+           return
+        s = "lock"
+        clientSocket.send(s.encode('utf-8'))
+
     def butHookClick(self):
         if not self.checkConnected():
            return
-        s = "Hook"
+        s = "hook"
         clientSocket.send(s.encode('utf-8'))
         
     def butUnhookClick(self):
         if not self.checkConnected():
            return
-        s = "Unhook"
+        s = "unhook"
         clientSocket.send(s.encode('utf-8'))
     
     def butPrintClick(self):
         if not self.checkConnected():
            return
-        s = "Print"
+        s = "print"
         clientSocket.send(s.encode('utf-8'))
         buffer = clientSocket.recv(4096).decode('utf-8')
         if not buffer or buffer=="No":
@@ -648,13 +700,12 @@ class Client(tk.Frame):
         
         self.tabControl = ttk.Notebook(self.frame1,style="TNotebook")
         self.tabControl.pack(expand=1,fill="both")
-        #self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
         
 
         
 
 
-    #--------------------TAB1----------------------------------------
+    #--------------------TAB1----------------------------------------APP
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
         self.tabControl.add(self.tab1,text="APPS\nCONTROLER")
 
@@ -673,9 +724,6 @@ class Client(tk.Frame):
         self.tab1.tv1.column(2, width = 75)
         self.tab1.tv1.column(3, width = 75)
         self.tab1.data = []
-        row=["Google Chorme","0000001","1234567"]
-        for i in range(10):
-            self.tab1.tv1.insert("", "end", values=row, tags="a")
         
         self.tab1.butRefresh = tk.Button(self.tab1,text = "Refresh",font=("Lato",15),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab1.butRefresh["command"] = self.butRefreshClick
@@ -707,7 +755,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB2----------------------------------------
+    #--------------------TAB2----------------------------------------PROCESS
         self.tab2 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER") 
 
@@ -726,9 +774,6 @@ class Client(tk.Frame):
         self.tab2.tv1.column(2, width = 75)
         self.tab2.tv1.column(3, width = 75)
         self.tab2.data = []
-        row=["Coc Coc","0000002","4348398"]
-        for i in range(10):
-            self.tab2.tv1.insert("", "end", values=row, tags="a")
         
         self.tab2.butRefresh = tk.Button(self.tab2,text = "Refresh",font=("Lato",15),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab2.butRefresh["command"] = self.butRefreshClick
@@ -760,7 +805,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB3----------------------------------------
+    #--------------------TAB3----------------------------------------FTP
         self.tab3 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLER")
 
@@ -770,7 +815,7 @@ class Client(tk.Frame):
         self.tab3.clientPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
         self.tab3.clientPathtxt.place(x=0,y=0,height=30,width=250)
 
-        self.tab3.serverPath = ""
+        self.tab3.serverPath = "\\"
         self.tab3.serverPathtxt = tk.Text(self.tab3)
         self.tab3.serverPathtxt.insert(INSERT,self.tab3.serverPath)
         self.tab3.serverPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
@@ -840,25 +885,29 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB4----------------------------------------
+    #--------------------TAB4----------------------------------------KEYBOARD
         self.tab4 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER")
 
+        self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butLock["command"] = self.butLockClick
+        self.tab4.butLock.place(x=25, y=20, height=50, width=70)
+
         self.tab4.butHook = tk.Button(self.tab4, text = "Hook",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab4.butHook["command"] = self.butHookClick
-        self.tab4.butHook.place(x=20, y=20, height=50, width=100)
+        self.tab4.butHook.place(x=120, y=20, height=50, width=70)
 
         self.tab4.butUnhook = tk.Button(self.tab4, text = "Unhook",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab4.butUnhook["command"] = self.butUnhookClick
-        self.tab4.butUnhook.place(x=140, y=20, height=50, width=100)
+        self.tab4.butUnhook.place(x=215, y=20, height=50, width=70)
 
         self.tab4.butPrint = tk.Button(self.tab4, text = "Print",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab4.butPrint["command"] = self.butPrintClick
-        self.tab4.butPrint.place(x=260, y=20, height=50, width=100)
+        self.tab4.butPrint.place(x=310, y=20, height=50, width=70)
    
         self.tab4.butDel = tk.Button(self.tab4, text = "Delete",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab4.butDel["command"] = self.butDelClick
-        self.tab4.butDel.place(x=380, y=20, height=50, width=100)
+        self.tab4.butDel.place(x=405, y=20, height=50, width=70)
 
         self.tab4.frame1 = tk.LabelFrame(self.tab4, text="")
         self.tab4.frame1.place(x=20, y=90, height=390, width=460)
@@ -872,7 +921,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB5----------------------------------------
+    #--------------------TAB5----------------------------------------MAC
         self.tab5 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ")
 
@@ -890,7 +939,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB6----------------------------------------
+    #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLER")
 
@@ -906,7 +955,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB7----------------------------------------
+    #--------------------TAB7----------------------------------------STREAMING
         self.tab7 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER")
 
