@@ -263,7 +263,7 @@ class Client(tk.Frame):
         elif tabName == "KEYBOARD\nCONTROLER":
             s = "KEYBOARD"
         elif tabName == "MAC\n   ADDRESS  ":
-            s = "MACADRESS"
+            s = "MACADDRESS"
         elif tabName == "POWER\nCONTROLER":
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
@@ -608,7 +608,6 @@ class Client(tk.Frame):
            return
         s = "macaddress"
         clientSocket.send(s.encode('utf-8'))
-        print(1)
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
         self.tab5.MACs = []
@@ -618,9 +617,12 @@ class Client(tk.Frame):
                size -= len(data)
                buffer += data
         self.tab5.MACs = json.loads(buffer.decode("utf-8"))
-        self.tab5.MACView.delete(0,"end")
+        self.tab5.MACView.delete('1.0', END)
         for MAC in self.tab5.MACs:
-            self.tab5.MACView.insert("", "end", values=MAC)
+            for item in MAC:
+                self.tab5.MACView.insert(INSERT, item)
+                self.tab5.MACView.insert(INSERT, "\t")
+            self.tab5.MACView.insert(INSERT, "\n\n")
 
 
 
@@ -713,7 +715,11 @@ class Client(tk.Frame):
 
     #--------------------TAB1----------------------------------------APP
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
-        self.tabControl.add(self.tab1,text="APPS\nCONTROLER")
+        tab1Img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\\tab1.png")
+        tab1Img = tab1Img.resize((40,40))
+        self.tab1.img = ImageTk.PhotoImage(tab1Img)
+        self.tabControl.add(self.tab1,text="APPS\nCONTROLER",image=self.tab1.img,compound=tk.TOP)
+
 
         self.tab1.frame0 = tk.Frame(self.tab1,background="black")
         self.tab1.frame0.place(x=0, y=0, height=440, width=500)
@@ -763,7 +769,10 @@ class Client(tk.Frame):
 
     #--------------------TAB2----------------------------------------PROCESS
         self.tab2 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER") 
+        tab2Img = Image.open("F:\HCMUS-Năm 2\Học kì 2\Mạng máy tính\Controller-Application-Using-Socket\Client\\tab2.png")
+        tab2Img = tab2Img.resize((40,40))
+        self.tab2.img = ImageTk.PhotoImage(tab2Img)
+        self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER",image=self.tab2.img,compound=tk.TOP) 
 
         self.tab2.frame0 = tk.Frame(self.tab2,background="black")
         self.tab2.frame0.place(x=0, y=0, height=440, width=500)
@@ -933,7 +942,7 @@ class Client(tk.Frame):
 
         self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle")
         self.tab5.frame1.place(x=20, y=20, height=390, width=460)
-        self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",insertbackground="white")
+        self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",8),relief="groove",bg="black",fg="white",cursor="circle",insertbackground="white")
         self.tab5.MACs = []
         self.tab5.MACView.pack()
 
@@ -978,8 +987,8 @@ class Client(tk.Frame):
 
 
     #------------------------------------------------------------
-        for i in range(0,7):
-            self.tabControl.tab(i,state="disabled")
+        # for i in range(0,7):
+        #     self.tabControl.tab(i,state="disabled")
 
 
 root=tk.Tk()
