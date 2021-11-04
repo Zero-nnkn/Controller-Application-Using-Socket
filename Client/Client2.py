@@ -822,7 +822,10 @@ class Client(tk.Frame):
 
     #--------------------TAB3----------------------------------------FTP
         self.tab3 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab3,text="FTP\nCONTROLER")
+        tab3Img = Image.open("Client\\tab3.png")
+        tab3Img = tab3Img.resize((40,40))
+        self.tab3.img = ImageTk.PhotoImage(tab3Img)
+        self.tabControl.add(self.tab3,text="FTP\nCONTROLER",image=self.tab3.img,compound=tk.TOP)
 
         self.tab3.clientPath = "\\"
         self.tab3.clientPathtxt = tk.Text(self.tab3)
@@ -860,10 +863,6 @@ class Client(tk.Frame):
         self.tab3.tv1.column(3, width = 40)
         self.tab3.clientInfos = []
         self.tab3.tv1.bind("<Double-1>", self.clientOnDoubleClick)
-        # row=["Google Chorme","0000001","1234567"]
-        # for i in range(10):
-        #     self.tab3.tv1.insert("", "end", values=row, tags="a")
-        #     self.tab3.tv1.tag_configure("a", background="black", foreground="white")
 
         self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0)
         self.tab3.popup1.add_command(label="Copy", command=self.copyToServer)
@@ -902,7 +901,10 @@ class Client(tk.Frame):
 
     #--------------------TAB4----------------------------------------KEYBOARD
         self.tab4 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER")
+        tab4Img = Image.open("Client\\tab4.png")
+        tab4Img = tab4Img.resize((40,40))
+        self.tab4.img = ImageTk.PhotoImage(tab4Img)
+        self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER",image=self.tab4.img,compound=tk.TOP)
 
         self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab4.butLock["command"] = self.butLockClick
@@ -983,8 +985,8 @@ class Client(tk.Frame):
 
 
     #------------------------------------------------------------
-        # for i in range(0,7):
-        #     self.tabControl.tab(i,state="disabled")
+        for i in range(0,7):
+            self.tabControl.tab(i,state="disabled")
 
 
 root=tk.Tk()
