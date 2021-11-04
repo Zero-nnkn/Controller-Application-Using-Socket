@@ -40,8 +40,7 @@ def CloseButton(root):
     root.destroy()
 
 
-
-class StreamingServer:
+class StreamingServer:  
     """
     Class for the streaming server.
     Attributes
@@ -202,12 +201,9 @@ class StreamingServer:
 
 class Client(tk.Frame):
 
-
-
-
-
     #--------------------GENERAL----------------------------------------
     def __init__(self, root):
+            super(Client, self).__init__()
             self.root=root
             self.root.title("SUPER CONTROLER")
             self.root.geometry("700x500")
@@ -311,7 +307,7 @@ class Client(tk.Frame):
     def butKillClick(self, event = None):
         if not self.checkConnected():
             return
-        s = "KillID"
+        s = "kill"
         clientSocket.send(s.encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
         if tabName == "APPS\nCONTROLER":
@@ -324,12 +320,13 @@ class Client(tk.Frame):
         if not buffer:
             return
         message = buffer.decode('utf-8')
+        print(message)
         messagebox.showinfo("", message,parent = self)
 
     def butStartClick(self, event = None):
         if not self.checkConnected():
             return
-        s = "StartID"
+        s = "start"
         clientSocket.send(s.encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
         if tabName == "APPS\nCONTROLER":
@@ -957,8 +954,6 @@ class Client(tk.Frame):
 
 
 
-
-
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
         tab6Img = Image.open("Client\\tab6.png")
@@ -973,8 +968,6 @@ class Client(tk.Frame):
         self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg="red",fg="white",justify="center",cursor="circle")
         self.tab6.butShutDown["command"] = self.butShutDownClick
         self.tab6.butShutDown.place(x=10, y=50, height=30, width=100)
-
-
 
 
 

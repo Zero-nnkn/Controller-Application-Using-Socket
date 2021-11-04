@@ -40,40 +40,30 @@ class ProcessController():
         self.__client.send(dataToSend)
 
     def killProcess(self):
-        buffer = ""
-        buffer = self.__client.recv(1024).decode("utf-8")
-        if buffer == "KillID":
-            IDtoKill = self.__client.recv(10).decode('utf-8')
-            test = False
-            for process in self.processList:
-                if IDtoKill == process[1]:
-                    try:
-                        os.kill(int(IDtoKill),signal.SIGTERM)
-                        s = "Success"
-                        self.__client.send(s.encode('utf-8'))
-                    except:
-                        s = "Error"
-                        self.__client.send(s.encode('utf-8'))
-                    test = True
-            if test == False:
-                s = "Error"
-                self.__client.send(s.encode('utf-8'))
-        else:
-            return
+        IDtoKill = self.__client.recv(10).decode('utf-8')
+        test = False
+        for process in self.processList:
+            if IDtoKill == process[1]:
+                try:
+                    os.kill(int(IDtoKill),signal.SIGTERM)
+                    s = "Success"
+                    self.__client.send(s.encode('utf-8'))
+                except:
+                    s = "Error"
+                    self.__client.send(s.encode('utf-8'))
+                test = True
+        if test == False:
+            s = "Error"
+            self.__client.send(s.encode('utf-8'))
     
     def startProcess(self):
-        buffer = ""
-        buffer = self.__client.recv(1024).decode("utf-8")
-        if buffer == "StartID":
-            ProcessToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
-            try:
-                PathProcess = os.path.relpath(ProcessToStart)
-                os.startfile(PathProcess)
-                s = "Success"
-                self.__client.send(s.encode('utf-8'))
-            except:
-                s = "Error"
-                self.__client.send(s.encode('utf-8'))
-        else:
-            return
+        ProcessToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
+        try:
+            PathProcess = os.path.relpath(ProcessToStart)
+            os.startfile(PathProcess)
+            s = "Success"
+            self.__client.send(s.encode('utf-8'))
+        except:
+            s = "Error"
+            self.__client.send(s.encode('utf-8'))
 

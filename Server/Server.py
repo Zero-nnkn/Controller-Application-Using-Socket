@@ -4,6 +4,8 @@ import os, signal
 from PIL import ImageGrab
 import json
 import subprocess
+import sys
+import win32com.shell.shell as shell
 import threading
 import winreg
 
@@ -18,6 +20,13 @@ import streamingClient
 
 PORT = 5000
 PORT_STREAM = 5500
+ASADMIN = 'asadmin'
+
+if sys.argv[-1] != ASADMIN:
+    script = os.path.abspath(sys.argv[0])
+    params = ' '.join([script] + sys.argv[1:] + [ASADMIN])
+    shell.ShellExecuteEx(lpVerb='runas', lpFile=sys.executable, lpParameters=params)
+    sys.exit(0)
 
 class Server(tk.Frame):
     def __init__(self, master = None):
@@ -205,6 +214,7 @@ class Server(tk.Frame):
 
 
         while True:
+
             buffer = ""
             buffer = self.__client.recv(1024)
             

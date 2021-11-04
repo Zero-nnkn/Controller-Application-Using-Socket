@@ -44,42 +44,32 @@ class AppController():
         self.__client.send(dataToSend)
 
     def killApp(self):
-        buffer = ""
-        buffer = self.__client.recv(1024).decode("utf-8")
-        if buffer == "KillID":
-            IDtoKill = self.__client.recv(10).decode('utf-8')
-            test = False
-            for app in self.appList:
-                if IDtoKill==app[1]:
-                    try:
-                        os.kill(int(IDtoKill), signal.SIGTERM) 
-                        s = "Success"
-                        self.__client.send(s.encode('utf-8'))
-                    except:
-                        s = "Error"
-                        self.__client.send(s.encode('utf-8'))
-                    test = True
-            if test==False:
-                s = "No App Found"
-                self.__client.send(s.encode('utf-8'))
-        else:
-            return
+        IDtoKill = self.__client.recv(10).decode('utf-8')
+        test = False
+        for app in self.appList:
+            if IDtoKill==app[1]:
+                try:
+                    os.kill(int(IDtoKill), signal.SIGTERM) 
+                    s = "Success"
+                    self.__client.send(s.encode('utf-8'))
+                except:
+                    s = "Error"
+                    self.__client.send(s.encode('utf-8'))
+                test = True
+        if test==False:
+            s = "No App Found"
+            self.__client.send(s.encode('utf-8'))
 
     def startApp(self):
-        buffer = ""
-        buffer = self.__client.recv(1024).decode("utf-8")
-        if buffer == "StartID":
-            ProcessToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
-            try:
-                PathProcess = os.path.relpath(ProcessToStart)
-                os.startfile(PathProcess)
-                s = "Success"
-                self.__client.send(s.encode('utf-8'))
-            except:
-                s = "Error"
-                self.__client.send(s.encode('utf-8'))
-        else:
-            return
+        ProcessToStart = self.__client.recv(1024).decode('utf-8') + ".exe"
+        try:
+            PathProcess = os.path.relpath(ProcessToStart)
+            os.startfile(PathProcess)
+            s = "Success"
+            self.__client.send(s.encode('utf-8'))
+        except:
+            s = "Error"
+            self.__client.send(s.encode('utf-8'))
 
 '''
 
