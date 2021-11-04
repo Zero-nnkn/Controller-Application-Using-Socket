@@ -17,12 +17,20 @@ import struct
 import threading
 import json
 
+import os
+from posixpath import relpath
+import psutil
+import shutil
+import win32com.client
 
 PORT = 5000
 PORT_STREAM = 5500
 
 clientSocket = None
 streamSocket = None
+
+CHUNKSIZE = 1_000_000
+METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 
 
 
@@ -260,13 +268,15 @@ class Client(tk.Frame):
         #clientSocket.sendall(s.encode('utf-8'))
         print(clientSocket)
         print(s)
+        if s == "FTP":
+            self.gettingStarted()
 
 
 
 
 
     #--------------------TAB1 2 APP PROCESS----------------------------------------
-    def butDelTreeClick(tree):
+    def clearTreeView(self, tree):
         rows = tree.get_children()
         if rows != '()':
             for row in rows:
@@ -291,7 +301,7 @@ class Client(tk.Frame):
                size -= len(data)
                buffer += data
         tab.data = json.loads(buffer.decode("utf-8"))
-        tab.tv1.butDelTreeClick()
+        self.clearTreeView(tab.tv1)
         rows = tab.data
         for row in rows:
             tab.tv1.insert("", "end", values=row)
@@ -329,14 +339,6 @@ class Client(tk.Frame):
 
 
     #--------------------TAB3 FTP----------------------------------------
-    def butClientPreviousPathClick(self, event = None):
-
-        a= None
-
-    def butServerPreviousPathClick(self, event = None):
-
-        a= None
-
     def do_popup1(self,event):
         try:
             self.tab3.popup1.selection = self.tab3.tv1.set(self.tab3.tv1.identify_row(event.y))
@@ -351,6 +353,97 @@ class Client(tk.Frame):
         finally:
             self.tab3.popup2.grab_release()
 
+    def getFileMetadata(self, fullPath, metadata):
+        path, filename = os.path.split(fullPath)
+        sh = win32com.client.gencache.EnsureDispatch('Shell.Application', 0)
+        ns = sh.NameSpace(path)
+        file_metadata = dict()
+        item = ns.ParseName(str(filename))
+        for ind, attribute in enumerate(metadata):
+            attr_value = ns.GetDetailsOf(item, ind)
+            if attr_value:
+                file_metadata[attribute] = attr_value
+        #print(file_metadata)
+        return file_metadata
+
+    def getFolderInfo(self, path):
+        self.info = []
+        for root, subfolder, files in os.walk(path):
+            for i in files:
+                dict = self.getFileMetadata(os.path.join(path,i),METADATA)
+                self.info.append([dict['Name'], dict['Size'], dict['Item type']])
+            for i in subfolder:
+                self.info.append([i, '', 'File folder'])
+            break
+        return self.info
+
+    def displayInfo(self, tree, infos):
+        self.clearTreeView(tree)
+        for info in infos:
+            tree.insert("", "end", values=info)
+
+    def gettingStarted(self):
+        drps = psutil.disk_partitions()
+        self.tab3.clientPath = ""
+        self.tab3.clientInfos = [dp.device for dp in drps if dp.fstype == 'NTFS']
+        self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
+        self.tab3.clientPathtxt.configure(state="normal")
+        self.tab3.clientPathtxt.delete('1.0', END)
+        self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
+
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        self.tab3.serverPath = ""
+        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
+        self.tab3.serverPathtxt.configure(state="normal")
+        self.tab3.serverPathtxt.delete('1.0', END)
+        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+
+    def butClientPreviousPathClick(self, event = None):
+        l = len(self.tab3.clientPath)
+        if self.tab3.clientPath[l-2:-1] == ":":
+            drps = psutil.disk_partitions()
+            self.tab3.clientPath = ""
+            self.tab3.clientInfos = [dp.device for dp in drps if dp.fstype == 'NTFS']
+            self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
+            self.tab3.clientPathtxt.configure(state="normal")
+            self.tab3.clientPathtxt.delete('1.0', END)
+            self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
+            return
+        elif self.tab3.clientPath =="": return
+        self.tab3.clientPath, tail = os.path.split(self.tab3.clientPath)
+        self.tab3.clientInfos = self.getFolderInfo(self.tab3.clientPath)
+        self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
+        self.tab3.clientPathtxt.configure(state="normal")
+        self.tab3.clientPathtxt.delete('1.0', END)
+        self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
+        self.tab3.clientPathtxt.configure(state="disabled")
+
+    def butServerPreviousPathClick(self, event = None):
+
+        a= None
+
+    def clientOnDoubleClick(self, event = None):
+        item = self.tab3.tv1.selection()[0]
+        folderName = self.tab3.tv1.item(item,"value")[0]
+        self.tab3.clientPath = os.path.join(self.tab3.clientPath,folderName)
+        self.tab3.clientInfos = self.getFolderInfo(self.tab3.clientPath)
+        self.displayInfo(self.tab3.tv1,self.tab3.clientInfos)
+        self.tab3.clientPathtxt.configure(state="normal")
+        self.tab3.clientPathtxt.delete('1.0', END)
+        self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
+        self.tab3.clientPathtxt.configure(state="disabled")
+
+    def serverOnDoubleClick(self, event = None):
+        item = self.tab3.tv2.selection()[0]
+        print(self.tab3.tv2.item(item,"value")[0])
+
     def copyToServer(self):
 
 
@@ -359,6 +452,55 @@ class Client(tk.Frame):
     def deleteFile(self):
 
         print (self.tab3.popup2.selection["1"])
+
+    def sendData(self, path):
+        if(os.path.isfile(path)):
+            head, relpath = os.path.split(path)
+            self.sendFile(path, relpath)
+        elif(os.path.isdir(path)):
+            self.sendFolder(path)
+        else:
+            return
+
+    def sendFile(self, fullPath, relpath):
+        filesize = os.path.getsize(fullPath)
+        self.__clientSocket.sendall(relpath.encode() + b'\n')
+        self.__clientSocket.sendall(str(filesize).encode() + b'\n')
+
+        # Message when need overwrite, rename or not
+        check = self.__clientSocket.recv(10)
+
+        if check == "exists":
+            request = None
+            #----------TO DO----------
+            # hiện bảng lựa chọ người dùng muốn overwrite, rename hay hủy copy
+            # trả về giá trị request = overwrite/rename/pause
+            #----------TO DO----------
+
+            self.__clientSocket.sendall(request.encode())
+        else: 
+            pass
+
+        if request != "pause":
+            with open(fullPath,'rb') as f:
+                while True:
+                    data = f.read(CHUNKSIZE)
+                    if not data: break
+                    self.__clientSocket.sendall(data)
+
+    def sendFolder(self, srcPath):
+        for path,subfolder,files in os.walk(srcPath):
+            for file in files:
+                fullPath = os.path.join(path,file)
+                relpath = os.path.relpath(fullPath,srcPath)
+                
+
+                print(f'Sending {relpath}')
+                self.sendFile(fullPath, relpath)
+
+
+
+
 
 
 
@@ -407,8 +549,22 @@ class Client(tk.Frame):
 
     #--------------------TAB5 MAC----------------------------------------
     def butGetMACClick(self):
-
-        a=None
+        if not self.checkConnected():
+           return
+        s = "macaddress"
+        clientSocket.send(s.encode('utf-8'))
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        self.tab5.MACs = []
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        self.tab5.MACs = json.loads(buffer.decode("utf-8"))
+        self.tab5.MACView.delete(0,"end")
+        for MAC in self.tab5.MACs:
+            self.tab5.MACView.insert("", "end", values=MAC)
 
 
 
@@ -608,13 +764,13 @@ class Client(tk.Frame):
         self.tab3 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLER")
 
-        self.tab3.clientPath = "F\\"
+        self.tab3.clientPath = "\\"
         self.tab3.clientPathtxt = tk.Text(self.tab3)
         self.tab3.clientPathtxt.insert(INSERT,self.tab3.clientPath)
         self.tab3.clientPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
         self.tab3.clientPathtxt.place(x=0,y=0,height=30,width=250)
 
-        self.tab3.serverPath = "C:\\"
+        self.tab3.serverPath = ""
         self.tab3.serverPathtxt = tk.Text(self.tab3)
         self.tab3.serverPathtxt.insert(INSERT,self.tab3.serverPath)
         self.tab3.serverPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
@@ -642,11 +798,12 @@ class Client(tk.Frame):
         self.tab3.tv1.column(1, width = 70)
         self.tab3.tv1.column(2, width = 40)
         self.tab3.tv1.column(3, width = 40)
-        self.tab3.clientFolders = []
-        row=["Google Chorme","0000001","1234567"]
-        for i in range(10):
-            self.tab3.tv1.insert("", "end", values=row, tags="a")
-            self.tab3.tv1.tag_configure("a", background="black", foreground="white")
+        self.tab3.clientInfos = []
+        self.tab3.tv1.bind("<Double-1>", self.clientOnDoubleClick)
+        # row=["Google Chorme","0000001","1234567"]
+        # for i in range(10):
+        #     self.tab3.tv1.insert("", "end", values=row, tags="a")
+        #     self.tab3.tv1.tag_configure("a", background="black", foreground="white")
 
         self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0)
         self.tab3.popup1.add_command(label="Copy", command=self.copyToServer)
@@ -661,13 +818,14 @@ class Client(tk.Frame):
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv2["columns"] = ("1", "2", "3")
         self.tab3.tv2["show"] = "headings"
-        self.tab3.tv2.heading(1, text = "Filename")
-        self.tab3.tv2.heading(2, text = "Filesize")
-        self.tab3.tv2.heading(3, text = "Filetype")
+        self.tab3.tv2.heading(1, text = "Name")
+        self.tab3.tv2.heading(2, text = "Size")
+        self.tab3.tv2.heading(3, text = "Item type")
         self.tab3.tv2.column(1, width = 70)
         self.tab3.tv2.column(2, width = 40)
         self.tab3.tv2.column(3, width = 40)
-        self.tab3.serverFolder = []
+        self.tab3.serverInfos = []
+        self.tab3.tv2.bind("<Double-1>", self.serverOnDoubleClick)
         row=["Coc Coc","0000001","1234567"]
         for i in range(10):
             self.tab3.tv2.insert("", "end", values=row, tags="a")
@@ -718,12 +876,11 @@ class Client(tk.Frame):
         self.tab5 = ttk.Frame(self.tabControl)
         self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ")
 
-        self.tab5.frame1 = tk.LabelFrame(self.tab5, text="")
+        self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle")
         self.tab5.frame1.place(x=20, y=20, height=390, width=460)
-        self.tab5.KeyView = tk.Text(self.tab5.frame1,font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",insertbackground="white")
-        self.tab5.KeyLog = "1443\n43434\n43434"
-        self.tab5.KeyView.insert(INSERT, self.tab5.KeyLog)
-        self.tab5.KeyView.pack()
+        self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",insertbackground="white")
+        self.tab5.MACs = []
+        self.tab5.MACView.pack()
 
         self.tab5.butGetMAC = tk.Button(self.tab5,text="Get MAC Address",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab5.butGetMAC["command"] = self.butGetMACClick
