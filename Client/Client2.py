@@ -601,9 +601,9 @@ class Client(tk.Frame):
 
 
 
-
     #--------------------TAB5 MAC----------------------------------------
     def butGetMACClick(self):
+        self.tab5.MACView.configure(state='normal')
         if not self.checkConnected():
            return
         s = "macaddress"
@@ -624,6 +624,8 @@ class Client(tk.Frame):
             self.tab5.MACView.insert(INSERT, "\tIPv4 Address:\t\t" + MAC[2] + "\n")
             self.tab5.MACView.insert(INSERT, "\tSubnet Mask:\t\t" + MAC[3] + "\n")
             self.tab5.MACView.insert(INSERT, "\n\n\n")
+        self.tab5.MACView.configure(state='disabled')
+        
 
 
 

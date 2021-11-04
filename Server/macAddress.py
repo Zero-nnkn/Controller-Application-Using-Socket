@@ -21,16 +21,16 @@ class MacAddress():
 
     def getMacAddresses(self):
         for interface, snics in psutil.net_if_addrs().items():
-            ip = None
-            mac = None
-            netmask = None
+            ip = ''
+            mac = ''
+            netmask = ''
             for snic in snics:
+                if snic.family == psutil.AF_LINK:
+                    mac = snic.address
                 if snic.family == socket.AF_INET:
                     ip = snic.address
                     netmask = snic.netmask
-                if snic.family == psutil.AF_LINK:
-                    mac = snic.address
-            yield (interface, mac, ip, netmask)
+                    yield (interface, mac, ip, netmask)
 
     def sendMacAddress(self):
         mac2ipv4 = list(self.getMacAddresses())
