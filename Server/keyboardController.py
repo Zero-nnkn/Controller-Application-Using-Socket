@@ -67,7 +67,7 @@ class KeyboardController():
 
     def lockKeyboard(self):
         while True:
-            windll.user32.BlockInput(True);
+            windll.user32.BlockInput(True)
 
     def unlockKeyboard(self):
         windll.user32.BlockInput(False); 
