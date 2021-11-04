@@ -517,11 +517,11 @@ class Client(tk.Frame):
 
     def sendFile(self, fullPath, relpath):
         filesize = os.path.getsize(fullPath)
-        self.__clientSocket.sendall(relpath.encode() + b'\n')
-        self.__clientSocket.sendall(str(filesize).encode() + b'\n')
+        clientSocket.sendall(relpath.encode() + b'\n')
+        clientSocket.sendall(str(filesize).encode() + b'\n')
 
         # Message when need overwrite, rename or not
-        check = self.__clientSocket.recv(10)
+        check = clientSocket.recv(10)
 
         if check == "exists":
             request = None
@@ -530,7 +530,7 @@ class Client(tk.Frame):
             # trả về giá trị request = overwrite/rename/pause
             #----------TO DO----------
 
-            self.__clientSocket.sendall(request.encode())
+            clientSocket.sendall(request.encode())
         else: 
             pass
 
@@ -539,7 +539,7 @@ class Client(tk.Frame):
                 while True:
                     data = f.read(CHUNKSIZE)
                     if not data: break
-                    self.__clientSocket.sendall(data)
+                    clientSocket.sendall(data)
 
     def sendFolder(self, srcPath):
         for path,subfolder,files in os.walk(srcPath):
@@ -961,7 +961,10 @@ class Client(tk.Frame):
 
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab6,text="POWER\nCONTROLER")
+        tab6Img = Image.open("Client\\tab6.png")
+        tab6Img = tab6Img.resize((40,40))
+        self.tab6.img = ImageTk.PhotoImage(tab6Img)
+        self.tabControl.add(self.tab6,text="POWER\nCONTROLER",image=self.tab6.img,compound=tk.TOP)
 
         self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
         self.tab6.butLogOut["command"] = self.butLogOutClick
@@ -977,7 +980,10 @@ class Client(tk.Frame):
 
     #--------------------TAB7----------------------------------------STREAMING
         self.tab7 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER")
+        tab7Img = Image.open("Client\\tab7.png")
+        tab7Img = tab7Img.resize((40,25))
+        self.tab7.img = ImageTk.PhotoImage(tab7Img)
+        self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER",image=self.tab7.img,compound=tk.TOP)
 
         self.tab7.main_label = Label(self.tab7)
         self.tab7.main_label.grid()
