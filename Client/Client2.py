@@ -962,7 +962,7 @@ class Client(tk.Frame):
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
         tab6Img = Image.open("Client\\tab6.png")
-        tab6Img = tab6Img.resize((40,40))
+        tab6Img = tab6Img.resize((40,37))
         self.tab6.img = ImageTk.PhotoImage(tab6Img)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLER",image=self.tab6.img,compound=tk.TOP)
 
@@ -981,7 +981,7 @@ class Client(tk.Frame):
     #--------------------TAB7----------------------------------------STREAMING
         self.tab7 = ttk.Frame(self.tabControl)
         tab7Img = Image.open("Client\\tab7.png")
-        tab7Img = tab7Img.resize((40,25))
+        tab7Img = tab7Img.resize((40,37))
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER",image=self.tab7.img,compound=tk.TOP)
 
