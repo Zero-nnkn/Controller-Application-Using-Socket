@@ -232,6 +232,7 @@ class Server(tk.Frame):
                 self.screenShareClient.startListening()
             elif message == 'EXIT':
                 self.__serverSocket.close()
+                self.screenShareClient.stop_stream()
                 break
             else:
                 break
