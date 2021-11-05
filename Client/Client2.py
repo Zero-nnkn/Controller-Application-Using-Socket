@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import Label, ttk
 from tkinter import Image, messagebox
 from tkinter import END,INSERT
-from tkinter.constants import ANCHOR, CENTER, VERTICAL
+from tkinter.constants import ANCHOR, CENTER, VERTICAL, Y
 from tkinter.font import BOLD
 
 from PIL import Image
@@ -32,6 +32,17 @@ streamSocket = None
 CHUNKSIZE = 1_000_000
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 
+appbg = "#232631"
+appfg = "white"
+
+btnbg = "#ff970c"
+btnfg = "black"
+
+entrybg = "black"
+entryfg = "#0bcdf2"
+
+txtbg = "black"
+txtfg = "#0bcdf2"
 
 
 def CloseButton(root):
@@ -206,7 +217,7 @@ class Client(tk.Frame):
             super(Client, self).__init__()
             self.root=root
             self.root.title("SUPER CONTROLER")
-            self.root.geometry("700x500")
+            self.root.geometry("740x635")
             self.root.resizable(False,False)
             self.root.grab_set()
             self.createWidgets()
@@ -231,13 +242,17 @@ class Client(tk.Frame):
             test = False
         if test:
             messagebox.showinfo("", "Success")
-            for i in range(0,7):
+            for i in range(0,8):
                 self.tabControl.tab(i,state="normal")
             self.tabControl.select(0)
             self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
         else:
             messagebox.showinfo("Error", "Not connected to the server")
-        a=None
+        # for i in range(0,8):
+        #     self.tabControl.tab(i,state="normal")
+        # self.tabControl.select(0)
+        # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+
 
     def butDisconnectClick(self, event = None):
         s = "EXIT"
@@ -248,7 +263,12 @@ class Client(tk.Frame):
     def on_tab_change(self,event=None):
         if self.firstChanged == False:
             clientSocket.send("quit".encode('utf-8'))
+            print(1)
         else: self.firstChanged = False
+
+        self.root.geometry("740x635")
+        self.frame1.place(width=600)
+
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
         if tabName == "APPS\nCONTROLER":
             s = "APP"
@@ -264,10 +284,18 @@ class Client(tk.Frame):
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
             s = "STREAMING"
+        elif tabName == "REGISTRY\nCONTROLER":
+            s = "REGISTRY"
         clientSocket.send(s.encode('utf-8'))
         print(s)
         if s == "FTP":
+            self.root.geometry("1040x635")
+            self.frame1.place(width=900)
             self.gettingStarted()
+        elif s == "STREAMING":
+            self.root.geometry("1040x635")
+            self.frame1.place(width=900)
+            
 
 
 
@@ -665,46 +693,47 @@ class Client(tk.Frame):
 
 
     #--------------------GENERAL----------------------------------------
-        self.frame0 = tk.LabelFrame(self.root,bd=1,background="black")
-        self.frame0.place(x=0, y=0, height=500, width=120)
+        self.frame0 = tk.LabelFrame(self.root,bd=1,background=appbg)
+        self.frame0.place(x=0, y=0, height=635, width=140)
 
-        self.frame1 = tk.LabelFrame(self.root,bd=1,background="black")
-        self.frame1.place(x=120, y=0, height=503, width=883)
+        self.frame1 = tk.LabelFrame(self.root,bd=1,background=appbg)
+        self.frame1.place(x=140, y=0, height=635, width=900)
 
         img = Image.open("Client\\logo.png")
+        img =img.resize((87,138))
         self.img=ImageTk.PhotoImage(img)
-        self.theme=tk.Label(self.frame0,image=self.img,background="black")
-        self.theme.place(x=25, y=45)
+        self.theme=tk.Label(self.frame0,image=self.img,background=appbg)
+        self.theme.place(x=25, y=50)
         img.close()
 
         self.ipConnect = tk.StringVar()
         self.ipConnect.set("Enter IP address")
         self.txtIP = tk.Entry(self.frame0, textvariable = self.ipConnect)
-        self.txtIP.place(x=10, y=170, height=30, width=100)
-        self.txtIP.configure(bg="black",fg="white",insertbackground="white",bd=3,font=("Lato",8))
+        self.txtIP.place(x=20, y=250, height=30, width=100)
+        self.txtIP.configure(bg=entrybg,fg=entryfg,insertbackground=entryfg,bd=3,font=("Lato",8))
         self.txtIP.bind("<Key-Return>", self.butConnectClick)
         
         #flat, groove, raised, ridge, solid, or sunken
-        self.butConnect = tk.Button(self.frame0,text = "Connect",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.butConnect = tk.Button(self.frame0,text = "Connect",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.butConnect["command"] = self.butConnectClick
-        self.butConnect.place(x=10, y=250, height=30, width=100)
+        self.butConnect.place(x=20, y=300, height=30, width=100)
 
-        self.butDisconnect = tk.Button(self.frame0,text = "Disconnect",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.butDisconnect = tk.Button(self.frame0,text = "Disconnect",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.butDisconnect["command"] = self.butDisconnectClick
-        self.butDisconnect.place(x=10, y=460, height=30, width=100)
+        self.butDisconnect.place(x=20, y=580, height=30, width=100)
         
         noteBookStyle = ttk.Style(self.frame1)
         noteBookStyle.theme_use('default')
-        noteBookStyle.configure("TNotebook", background="black", tabposition='wn',cursor="circle")
-        noteBookStyle.configure("TNotebook.Tab", font=('Lato', 8, BOLD), justify="center", background="black", foreground="white", ANCHOR="c",cursor="circle")
-        noteBookStyle.map("TNotebook.Tab", background= [("selected", "white")],foreground=[("selected", "black")])
+        noteBookStyle.configure("TNotebook", background=appbg, tabposition='wn',cursor="circle")
+        noteBookStyle.configure("TNotebook.Tab", font=('Lato', 8, BOLD), justify="center", background=txtbg, foreground=txtfg, ANCHOR="c",cursor="circle")
+        noteBookStyle.map("TNotebook.Tab", background= [("selected", entryfg)],foreground=[("selected",appbg)])
 
         tabFrameStyle = ttk.Style(self.frame1)
-        tabFrameStyle.configure("TFrame", background="black")
+        tabFrameStyle.configure("TFrame", background=appbg)
 
         treeViewStyle = ttk.Style(self.frame1)
-        treeViewStyle.configure("Treeview", background="black", foreground="white", fieldbackground="black")
-        treeViewStyle.configure("Treeview.Heading", font=('Lato', 11, BOLD), background="black", foreground='white')
+        treeViewStyle.configure("Treeview", background="black", foreground="white", fieldbackground=appbg)
+        treeViewStyle.configure("Treeview.Heading", font=('Lato', 11), background=txtbg, foreground=txtfg)
         
         self.tabControl = ttk.Notebook(self.frame1,style="TNotebook")
         self.tabControl.pack(expand=1,fill="both")
@@ -721,8 +750,8 @@ class Client(tk.Frame):
         self.tabControl.add(self.tab1,text="APPS\nCONTROLER",image=self.tab1.img,compound=tk.TOP)
 
 
-        self.tab1.frame0 = tk.Frame(self.tab1,background="black")
-        self.tab1.frame0.place(x=0, y=0, height=440, width=500)
+        self.tab1.frame0 = tk.Frame(self.tab1,background=appbg)
+        self.tab1.frame0.place(x=20, y=20, height=495, width=480)
         self.tab1.tv1 = ttk.Treeview(self.tab1.frame0)
         self.tab1.tv1.place(relheight=1, relwidth=1)
         self.tab1.treescrolly = tk.Scrollbar(self.tab1.frame0, orient="vertical", command=self.tab1.tv1.yview)
@@ -737,31 +766,31 @@ class Client(tk.Frame):
         self.tab1.tv1.column(3, width = 75)
         self.tab1.data = []
         
-        self.tab1.butRefresh = tk.Button(self.tab1,text = "Refresh",font=("Lato",15),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab1.butRefresh = tk.Button(self.tab1,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab1.butRefresh["command"] = self.butRefreshClick
-        self.tab1.butRefresh.place(x=0, y=440, height=60, width=150)
+        self.tab1.butRefresh.place(x=20, y=535, height=80, width=120)
 
         self.tab1.killID = tk.StringVar()
         self.tab1.killID.set("Enter ID")
         self.tab1.KillIDEntry = tk.Entry(self.tab1, textvariable = self.tab1.killID)
-        self.tab1.KillIDEntry.place(x=150, y=440, height=30, width=250)
-        self.tab1.KillIDEntry.configure(font=("Lato",10),relief="groove",bg="black",fg="white",insertbackground="white")
+        self.tab1.KillIDEntry.place(x=160, y=585, height=30, width=210)
+        self.tab1.KillIDEntry.configure(font=("Lato",10),relief="groove",bg=entrybg,fg=entryfg,insertbackground=entryfg)
         self.tab1.KillIDEntry.bind("<Key-Return>", self.butKillClick)
 
-        self.tab1.butKill = tk.Button(self.tab1,text = "Kill",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab1.butKill = tk.Button(self.tab1,text = "Kill",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab1.butKill["command"] = self.butKillClick
-        self.tab1.butKill.place(x=400, y=440, height=30, width=100)
+        self.tab1.butKill.place(x=400, y=585, height=30, width=100)
 
         self.tab1.startID = tk.StringVar()
         self.tab1.startID.set("Enter Name")
         self.tab1.StartIDEntry = tk.Entry(self.tab1, textvariable = self.tab1.startID)
-        self.tab1.StartIDEntry.place(x=150, y=470, height=30, width=250)
-        self.tab1.StartIDEntry.configure(font=("Lato",10),relief="groove",bg="black",fg="white",insertbackground="white")
+        self.tab1.StartIDEntry.place(x=160, y=535, height=30, width=210)
+        self.tab1.StartIDEntry.configure(font=("Lato",10),relief="groove",bg=entrybg,fg=entryfg,insertbackground=entryfg)
         self.tab1.StartIDEntry.bind("<Key-Return>", self.butStartClick)
 
-        self.tab1.butStart = tk.Button(self.tab1,text = "Start",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab1.butStart = tk.Button(self.tab1,text = "Start",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab1.butStart["command"] = self.butStartClick
-        self.tab1.butStart.place(x=400, y=470, height=30, width=100)
+        self.tab1.butStart.place(x=400, y=535, height=30, width=100)
 
 
 
@@ -774,8 +803,8 @@ class Client(tk.Frame):
         self.tab2.img = ImageTk.PhotoImage(tab2Img)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER",image=self.tab2.img,compound=tk.TOP) 
 
-        self.tab2.frame0 = tk.Frame(self.tab2,background="black")
-        self.tab2.frame0.place(x=0, y=0, height=440, width=500)
+        self.tab2.frame0 = tk.Frame(self.tab2,background=appbg)
+        self.tab2.frame0.place(x=20, y=20, height=495, width=480)
         self.tab2.tv1 = ttk.Treeview(self.tab2.frame0)
         self.tab2.tv1.place(relheight=1, relwidth=1)
         self.tab2.treescrolly = tk.Scrollbar(self.tab2.frame0, orient="vertical", command=self.tab2.tv1.yview)
@@ -790,31 +819,31 @@ class Client(tk.Frame):
         self.tab2.tv1.column(3, width = 75)
         self.tab2.data = []
         
-        self.tab2.butRefresh = tk.Button(self.tab2,text = "Refresh",font=("Lato",15),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab2.butRefresh = tk.Button(self.tab2,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab2.butRefresh["command"] = self.butRefreshClick
-        self.tab2.butRefresh.place(x=0, y=440, height=60, width=150)
+        self.tab2.butRefresh.place(x=20, y=535, height=80, width=120)
 
         self.tab2.killID = tk.StringVar()
         self.tab2.killID.set("Enter ID")
         self.tab2.KillIDEntry = tk.Entry(self.tab2, textvariable = self.tab2.killID)
-        self.tab2.KillIDEntry.place(x=150, y=440, height=30, width=250)
-        self.tab2.KillIDEntry.configure(font=("Lato",10),relief="groove",bg="black",fg="white",insertbackground="white")
+        self.tab2.KillIDEntry.place(x=160, y=585, height=30, width=210)
+        self.tab2.KillIDEntry.configure(font=("Lato",10),relief="groove",bg=entrybg,fg=entryfg,insertbackground="white")
         self.tab2.KillIDEntry.bind("<Key-Return>", self.butKillClick)
 
-        self.tab2.butKill = tk.Button(self.tab2,text = "Kill",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab2.butKill = tk.Button(self.tab2,text = "Kill",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab2.butKill["command"] = self.butKillClick
-        self.tab2.butKill.place(x=400, y=440, height=30, width=100)
+        self.tab2.butKill.place(x=400, y=585, height=30, width=100)
 
         self.tab2.startID = tk.StringVar()
         self.tab2.startID.set("Enter Name")
         self.tab2.StartIDEntry = tk.Entry(self.tab2, textvariable = self.tab2.startID)
-        self.tab2.StartIDEntry.place(x=150, y=470, height=30, width=250)
-        self.tab2.StartIDEntry.configure(font=("Lato",10),relief="groove",bg="black",fg="white",insertbackground="white")
+        self.tab2.StartIDEntry.place(x=160, y=535, height=30, width=210)
+        self.tab2.StartIDEntry.configure(font=("Lato",10),relief="groove",bg=entrybg,fg=entryfg,insertbackground="white")
         self.tab2.StartIDEntry.bind("<Key-Return>", self.butStartClick)
 
-        self.tab2.butStart = tk.Button(self.tab2,text = "Start",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab2.butStart = tk.Button(self.tab2,text = "Start",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab2.butStart["command"] = self.butStartClick
-        self.tab2.butStart.place(x=400, y=470, height=30, width=100)
+        self.tab2.butStart.place(x=400, y=535, height=30, width=100)
 
 
 
@@ -827,28 +856,34 @@ class Client(tk.Frame):
         self.tab3.img = ImageTk.PhotoImage(tab3Img)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLER",image=self.tab3.img,compound=tk.TOP)
 
+        self.tab3.label1 = Label(self.tab3,text="LOCAL",font=("Lato",10,BOLD),relief="groove",bg=txtbg,fg=txtfg)
+        self.tab3.label1.place(x=20,y=20,height=30,width=380)
+
+        self.tab3.label2 = Label(self.tab3,text="REMOTE",font=("Lato",10,BOLD),relief="groove",bg=txtbg,fg=txtfg)
+        self.tab3.label2.place(x=420,y=20,height=30,width=380)
+
         self.tab3.clientPath = "\\"
         self.tab3.clientPathtxt = tk.Text(self.tab3)
         self.tab3.clientPathtxt.insert(INSERT,self.tab3.clientPath)
-        self.tab3.clientPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
-        self.tab3.clientPathtxt.place(x=0,y=0,height=30,width=250)
+        self.tab3.clientPathtxt.configure(font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",state="disabled")
+        self.tab3.clientPathtxt.place(x=20,y=50,height=60,width=380)
 
         self.tab3.serverPath = "\\"
         self.tab3.serverPathtxt = tk.Text(self.tab3)
         self.tab3.serverPathtxt.insert(INSERT,self.tab3.serverPath)
-        self.tab3.serverPathtxt.configure(font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle",state="disabled")
-        self.tab3.serverPathtxt.place(x=250,y=0,height=30,width=250)
+        self.tab3.serverPathtxt.configure(font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",state="disabled")
+        self.tab3.serverPathtxt.place(x=420,y=50,height=60,width=380)
 
-        self.tab3.butClientPreviousPath=tk.Button(self.tab3,text = "Previous",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")        
+        self.tab3.butClientPreviousPath=tk.Button(self.tab3,text = "Previous",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")        
         self.tab3.butClientPreviousPath["command"] = self.butClientPreviousPathClick
-        self.tab3.butClientPreviousPath.place(x=0, y=30, height=30, width=100)
+        self.tab3.butClientPreviousPath.place(x=20, y=110, height=30, width=100)
 
-        self.tab3.butServerPreviousPath=tk.Button(self.tab3,text = "Previous",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")        
+        self.tab3.butServerPreviousPath=tk.Button(self.tab3,text = "Previous",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")        
         self.tab3.butServerPreviousPath["command"] = self.butServerPreviousPathClick
-        self.tab3.butServerPreviousPath.place(x=250, y=30, height=30, width=100)
+        self.tab3.butServerPreviousPath.place(x=420, y=110, height=30, width=100)
 
-        self.tab3.frame0 = tk.Frame(self.tab3,background="black")
-        self.tab3.frame0.place(x=0, y=60, height=440, width=250)
+        self.tab3.frame0 = tk.Frame(self.tab3,background=appbg)
+        self.tab3.frame0.place(x=20, y=140, height=480, width=380)
         self.tab3.tv1 = ttk.Treeview(self.tab3.frame0)
         self.tab3.tv1.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame0, orient="vertical", command=self.tab3.tv1.yview)
@@ -864,13 +899,13 @@ class Client(tk.Frame):
         self.tab3.clientInfos = []
         self.tab3.tv1.bind("<Double-1>", self.clientOnDoubleClick)
 
-        self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0)
-        self.tab3.popup1.add_command(label="Copy", command=self.copyToServer)
+        self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg)
+        self.tab3.popup1.add_command(label="Send", command=self.copyToServer)
         self.tab3.popup1.add_separator()
         self.tab3.tv1.bind("<Button-3>", self.do_popup1)
 
-        self.tab3.frame1 = tk.Frame(self.tab3,background="black")
-        self.tab3.frame1.place(x=250, y=60, height=440, width=250)
+        self.tab3.frame1 = tk.Frame(self.tab3,background=appbg)
+        self.tab3.frame1.place(x=420, y=140, height=480, width=380)
         self.tab3.tv2 = ttk.Treeview(self.tab3.frame1)
         self.tab3.tv2.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame1, orient="vertical", command=self.tab3.tv2.yview)
@@ -885,12 +920,12 @@ class Client(tk.Frame):
         self.tab3.tv2.column(3, width = 40)
         self.tab3.serverInfos = []
         self.tab3.tv2.bind("<Double-1>", self.serverOnDoubleClick)
-        row=["Coc Coc","0000001","1234567"]
-        for i in range(10):
+        for i in range(100):
+            row=["Coc Coc",i,"1234567"]
             self.tab3.tv2.insert("", "end", values=row, tags="a")
-            self.tab3.tv2.tag_configure("a", background="black", foreground="white")
+            self.tab3.tv2.tag_configure("a", background=txtbg, foreground=txtfg)
 
-        self.tab3.popup2 = tk.Menu(self.tab3, tearoff=0)
+        self.tab3.popup2 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg)
         self.tab3.popup2.add_command(label="Delete", command=self.deleteFile)
         self.tab3.popup2.add_separator()
         self.tab3.tv2.bind("<Button-3>", self.do_popup2)
@@ -906,33 +941,33 @@ class Client(tk.Frame):
         self.tab4.img = ImageTk.PhotoImage(tab4Img)
         self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER",image=self.tab4.img,compound=tk.TOP)
 
-        self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butLock["command"] = self.butLockClick
-        self.tab4.butLock.place(x=25, y=20, height=50, width=70)
+        self.tab4.butLock.place(x=20, y=20, height=50, width=80)
 
-        self.tab4.butHook = tk.Button(self.tab4, text = "Hook",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butHook = tk.Button(self.tab4, text = "Hook",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butHook["command"] = self.butHookClick
-        self.tab4.butHook.place(x=120, y=20, height=50, width=70)
+        self.tab4.butHook.place(x=120, y=20, height=50, width=80)
 
-        self.tab4.butUnhook = tk.Button(self.tab4, text = "Unhook",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butUnhook = tk.Button(self.tab4, text = "Unhook",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butUnhook["command"] = self.butUnhookClick
-        self.tab4.butUnhook.place(x=215, y=20, height=50, width=70)
+        self.tab4.butUnhook.place(x=220, y=20, height=50, width=80)
 
-        self.tab4.butPrint = tk.Button(self.tab4, text = "Print",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butPrint = tk.Button(self.tab4, text = "Print",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butPrint["command"] = self.butPrintClick
-        self.tab4.butPrint.place(x=310, y=20, height=50, width=70)
+        self.tab4.butPrint.place(x=320, y=20, height=50, width=80)
    
-        self.tab4.butDel = tk.Button(self.tab4, text = "Delete",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab4.butDel = tk.Button(self.tab4, text = "Delete",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butDel["command"] = self.butDelClick
-        self.tab4.butDel.place(x=405, y=20, height=50, width=70)
+        self.tab4.butDel.place(x=420, y=20, height=50, width=80)
 
         self.tab4.frame1 = tk.LabelFrame(self.tab4, text="")
-        self.tab4.frame1.place(x=20, y=90, height=390, width=460)
-        self.tab4.KeyView = tk.Text(self.tab4.frame1,font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle")
+        self.tab4.frame1.place(x=20, y=90, height=525, width=480)
+        self.tab4.KeyView = tk.Text(self.tab4.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle")
         self.tab4.KeyLog = ""
         self.tab4.KeyView.insert(INSERT, self.tab4.KeyLog)
         self.tab4.KeyView.config(state="disabled")
-        self.tab4.KeyView.pack()
+        self.tab4.KeyView.place(x=0,y=0,height=522,width=477)
 
 
 
@@ -940,52 +975,66 @@ class Client(tk.Frame):
 
     #--------------------TAB5----------------------------------------MAC
         self.tab5 = ttk.Frame(self.tabControl)
-        self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ")
+        tab5Img = Image.open("Client\\tab5.png")
+        tab5Img = tab5Img.resize((40,40))
+        self.tab5.img = ImageTk.PhotoImage(tab5Img)
+        self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ",image=self.tab5.img,compound=tk.TOP)
 
-        self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg="black",fg="white",cursor="circle")
-        self.tab5.frame1.place(x=20, y=20, height=390, width=460)
-        self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",8),relief="groove",bg="black",fg="white",cursor="circle",insertbackground="white")
+        self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
+        self.tab5.frame1.place(x=20, y=20, height=525, width=480)
+        self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
         self.tab5.MACs = []
-        self.tab5.MACView.pack()
+        self.tab5.MACView.place(x=0,y=0,height=505,width=475)
 
-        self.tab5.butGetMAC = tk.Button(self.tab5,text="Get MAC Address",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab5.butGetMAC = tk.Button(self.tab5,text="Get MAC Address",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab5.butGetMAC["command"] = self.butGetMACClick
-        self.tab5.butGetMAC.place(x=180, y=430, height=50, width=140)
+        self.tab5.butGetMAC.place(x=190, y=565, height=50, width=140)
 
 
 
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
         tab6Img = Image.open("Client\\tab6.png")
-        tab6Img = tab6Img.resize((40,37))
+        tab6Img = tab6Img.resize((40,40))
         self.tab6.img = ImageTk.PhotoImage(tab6Img)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLER",image=self.tab6.img,compound=tk.TOP)
 
-        self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab6.butLogOut["command"] = self.butLogOutClick
-        self.tab6.butLogOut.place(x=10, y=10, height=30, width=100)
+        self.tab6.butLogOut.place(x=20, y=20, height=30, width=100)
 
         self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg="red",fg="white",justify="center",cursor="circle")
         self.tab6.butShutDown["command"] = self.butShutDownClick
-        self.tab6.butShutDown.place(x=10, y=50, height=30, width=100)
+        self.tab6.butShutDown.place(x=20, y=70, height=30, width=100)
 
 
 
     #--------------------TAB7----------------------------------------STREAMING
         self.tab7 = ttk.Frame(self.tabControl)
         tab7Img = Image.open("Client\\tab7.png")
-        tab7Img = tab7Img.resize((40,37))
+        tab7Img = tab7Img.resize((40,40))
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER",image=self.tab7.img,compound=tk.TOP)
 
         self.tab7.main_label = Label(self.tab7)
         self.tab7.main_label.grid()
-        self.tab7.main_label.place(x=0,y=0,height=380,width=500)
-        self.tab7.main_label.configure(bg="grey",bd=2)
+        self.tab7.main_label.place(x=20,y=20,height=525,width=780)
+        self.tab7.main_label.configure(bg="black",bd=2)
 
-        self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Recording",font=("Lato",10),relief="groove",bg="black",fg="white",justify="center",cursor="circle")
+        self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Streaming",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab7.butStartRecording["command"] = self.butStartRecording
-        self.tab7.butStartRecording.place(x=200, y=400, height=50, width=100)
+        self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
+
+
+
+
+
+    #--------------------TAB8----------------------------------------STREAMING
+        self.tab8 = ttk.Frame(self.tabControl)
+        tab8Img = Image.open("Client\\tab8.png")
+        tab8Img = tab8Img.resize((40,40))
+        self.tab8.img = ImageTk.PhotoImage(tab8Img)
+        self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLER",image=self.tab8.img,compound=tk.TOP)
 
 
 
