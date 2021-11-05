@@ -978,12 +978,6 @@ class Client(tk.Frame):
         self.tab1.popup.add_separator()
         self.tab1.tv1.bind("<Button-3>", self.doTab12Popup)
 
-        for i in range(100):
-            row=["Coc Coc",i,"1234567"]
-            self.tab1.tv1.insert("", "end", values=row, tags="a")
-            self.tab1.tv1.tag_configure("a", background=txtbg, foreground=txtfg)
-
-
         self.tab1.butRefresh = tk.Button(self.tab1,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab1.butRefresh["command"] = self.butRefreshClick
         self.tab1.butRefresh.place(x=20, y=535, height=80, width=120)
@@ -1041,12 +1035,6 @@ class Client(tk.Frame):
         self.tab2.popup.add_command(label="Kill", command=self.killRightClick)
         self.tab2.popup.add_separator()
         self.tab2.tv1.bind("<Button-3>", self.doTab12Popup)
-
-
-        for i in range(100):
-            row=["Coc Coc",i,"1234567"]
-            self.tab2.tv1.insert("", "end", values=row, tags="a")
-            self.tab2.tv1.tag_configure("a", background=txtbg, foreground=txtfg)
         
         self.tab2.butRefresh = tk.Button(self.tab2,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab2.butRefresh["command"] = self.butRefreshClick
