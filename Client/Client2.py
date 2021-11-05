@@ -235,28 +235,28 @@ class Client(tk.Frame):
         else: return True
 
     def butConnectClick(self, event = None):
-        # test = True
-        # global clientSocket
-        # try:
-        #     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #     self.host = self.ipConnect.get().strip()
-        #     clientSocket.connect((self.host,PORT))
-        # except:
-        #     print ("Fail to connect with the socket-server")
-        #     clientSocket= None
-        #     test = False
-        # if test:
-        #     messagebox.showinfo("", "Success")
-        #     for i in range(0,8):
-        #         self.tabControl.tab(i,state="normal")
-        #     self.tabControl.select(0)
-        #     self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
-        # else:
-        #     messagebox.showinfo("Error", "Not connected to the server")
-        for i in range(0,8):
-            self.tabControl.tab(i,state="normal")
-        self.tabControl.select(0)
-        self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        test = True
+        global clientSocket
+        try:
+            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.host = self.ipConnect.get().strip()
+            clientSocket.connect((self.host,PORT))
+        except:
+            print ("Fail to connect with the socket-server")
+            clientSocket= None
+            test = False
+        if test:
+            messagebox.showinfo("", "Success")
+            for i in range(0,8):
+                self.tabControl.tab(i,state="normal")
+            self.tabControl.select(0)
+            self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        else:
+            messagebox.showinfo("Error", "Not connected to the server")
+        # for i in range(0,8):
+        #     self.tabControl.tab(i,state="normal")
+        # self.tabControl.select(0)
+        # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
 
 
     def butDisconnectClick(self, event = None):
@@ -267,7 +267,7 @@ class Client(tk.Frame):
 
     def on_tab_change(self,event=None):
         if self.firstChanged == False:
-            #clientSocket.send("quit".encode('utf-8'))
+            clientSocket.send("quit".encode('utf-8'))
             print(1)
         else: self.firstChanged = False
 
@@ -291,7 +291,7 @@ class Client(tk.Frame):
             s = "STREAMING"
         elif tabName == "REGISTRY\nCONTROLER":
             s = "REGISTRY"
-        #clientSocket.send(s.encode('utf-8'))
+        clientSocket.send(s.encode('utf-8'))
         print(s)
         if s == "FTP":
             self.root.geometry("1040x635")
