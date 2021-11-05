@@ -129,6 +129,7 @@ class StreamingClient:
         Stops client stream if running
         """
         if self.__running:
+            self.__client_socket.close()
             self.__running = False
         else:
             print("Client not streaming!")
