@@ -27,8 +27,6 @@ class Server(tk.Frame):
         self.__port = PORT
         self.__portStream = PORT_STREAM
         self.__client = None
-        self.__serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__serverSocket.bind((self.__host, self.__port))
 
         super().__init__(master)
         self.pack(fill="both", expand=True)
@@ -191,6 +189,8 @@ class Server(tk.Frame):
         self.keyController.startListening()
         
     def buttonClick(self):
+        self.__serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__serverSocket.bind((self.__host, self.__port))
         self.__serverSocket.listen(5)
         print("Waiting for connection...")
         self.__client, addr = self.__serverSocket.accept()
@@ -202,7 +202,7 @@ class Server(tk.Frame):
         self.macAddress = macAddress.MacAddress(self.__client)
         self.powerController = powerController.PowerController(self.__client)
         self.registryController = registryController.RegistryController(self.__client)
-        self.screenShareClient = streamingClient.ScreenShareClient(addr[0],self.__portStream)
+        self.screenShareClient = streamingClient.ScreenShareClient(addr[0],self.__portStream, self.__client)
 
 
         while True:
@@ -231,7 +231,7 @@ class Server(tk.Frame):
             elif message == "STREAM":
                 self.screenShareClient.startListening()
             elif message == 'EXIT':
-                root.destroy()
+                self.__serverSocket.close()
                 break
             else:
                 break
