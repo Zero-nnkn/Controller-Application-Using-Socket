@@ -336,6 +336,7 @@ class Client(tk.Frame):
         message = buffer.decode('utf-8')
         print(message)
         messagebox.showinfo("", message,parent = self)
+        self.butRefreshClick()
 
     def clearTreeView(self, tree):
         rows = tree.get_children()
@@ -383,8 +384,9 @@ class Client(tk.Frame):
         if not buffer:
             return
         message = buffer.decode('utf-8')
-        print(message)
+        self.butRefreshClick()
         messagebox.showinfo("", message,parent = self)
+
 
     def butStartClick(self, event = None):
         if not self.checkConnected():
@@ -402,8 +404,8 @@ class Client(tk.Frame):
         if not buffer:
             return
         message = buffer.decode('utf-8')
+        self.butRefreshClick()
         messagebox.showinfo("", message, parent = self)
-
 
 
 
