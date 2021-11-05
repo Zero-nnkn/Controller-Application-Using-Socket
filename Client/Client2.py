@@ -2,7 +2,7 @@ import socket
 import tkinter as tk
 
 from tkinter import Label, ttk
-from tkinter import Image, messagebox
+from tkinter import Image, messagebox, filedialog
 from tkinter import END,INSERT
 from tkinter.constants import ANCHOR, CENTER, VERTICAL, Y
 from tkinter.font import BOLD
@@ -35,14 +35,19 @@ METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 appbg = "#232631"
 appfg = "white"
 
-btnbg = "#ff970c"
-btnfg = "black"
+outbtnbg = "#ff970c"
+outbtnfg = "black"
+
+btnbg = "#141414"
+btnfg = "white"
 
 entrybg = "black"
 entryfg = "#0bcdf2"
 
 txtbg = "black"
 txtfg = "#0bcdf2"
+
+
 
 
 def CloseButton(root):
@@ -230,28 +235,28 @@ class Client(tk.Frame):
         else: return True
 
     def butConnectClick(self, event = None):
-        test = True
-        global clientSocket
-        try:
-            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.host = self.ipConnect.get().strip()
-            clientSocket.connect((self.host,PORT))
-        except:
-            print ("Fail to connect with the socket-server")
-            clientSocket= None
-            test = False
-        if test:
-            messagebox.showinfo("", "Success")
-            for i in range(0,8):
-                self.tabControl.tab(i,state="normal")
-            self.tabControl.select(0)
-            self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
-        else:
-            messagebox.showinfo("Error", "Not connected to the server")
-        # for i in range(0,8):
-        #     self.tabControl.tab(i,state="normal")
-        # self.tabControl.select(0)
-        # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        # test = True
+        # global clientSocket
+        # try:
+        #     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #     self.host = self.ipConnect.get().strip()
+        #     clientSocket.connect((self.host,PORT))
+        # except:
+        #     print ("Fail to connect with the socket-server")
+        #     clientSocket= None
+        #     test = False
+        # if test:
+        #     messagebox.showinfo("", "Success")
+        #     for i in range(0,8):
+        #         self.tabControl.tab(i,state="normal")
+        #     self.tabControl.select(0)
+        #     self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+        # else:
+        #     messagebox.showinfo("Error", "Not connected to the server")
+        for i in range(0,8):
+            self.tabControl.tab(i,state="normal")
+        self.tabControl.select(0)
+        self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
 
 
     def butDisconnectClick(self, event = None):
@@ -262,7 +267,7 @@ class Client(tk.Frame):
 
     def on_tab_change(self,event=None):
         if self.firstChanged == False:
-            clientSocket.send("quit".encode('utf-8'))
+            #clientSocket.send("quit".encode('utf-8'))
             print(1)
         else: self.firstChanged = False
 
@@ -286,7 +291,7 @@ class Client(tk.Frame):
             s = "STREAMING"
         elif tabName == "REGISTRY\nCONTROLER":
             s = "REGISTRY"
-        clientSocket.send(s.encode('utf-8'))
+        #clientSocket.send(s.encode('utf-8'))
         print(s)
         if s == "FTP":
             self.root.geometry("1040x635")
@@ -685,6 +690,99 @@ class Client(tk.Frame):
 
 
 
+    
+    #--------------------TAB8 REGISTRY----------------------------------------
+    def butBrowseClick(self, event = None):
+        s = "browse"
+        sfile = filedialog.askopenfilename(initialdir=os.getcwd(), title=s, filetypes=[("reg file",".reg"), ("all file",".*")], parent = self.tab8)
+        self.tab8.Path1.config(state="normal")
+        self.tab8.Path1.delete("1.0", END)
+        self.tab8.Path1.insert("1.0", sfile)
+        self.tab8.Path1.place(x=0, y=0, height=22, width=335)
+        self.tab8.Path1.config(state="disabled")
+        if sfile == "":
+            return
+        try:
+            f = open(sfile, "r")
+        except:
+            messagebox.showinfo("Error", "Error",parent = self.tab8)
+        content = f.read()
+        if content == None:
+            return
+        self.tab8.Content.delete("1.0", END)
+        self.tab8.Content.insert("1.0", content)
+        f.close()
+        
+    def butSend1Click(self, event = None):
+        s = "reg"
+        clientSocket.send(s.encode('utf-8'))
+        content = self.tab8.Content.get('1.0', END)
+        clientSocket.send(content.encode('utf-8'))
+        message = clientSocket.recv(100).decode('utf-8')
+        messagebox.showinfo("", message,parent = self.tab8)
+
+    def butSend2Click(self, event = None):
+        s = "send"
+        clientSocket.send(s.encode('utf-8'))
+        check = clientSocket.recv(10)
+
+        s = self.tab8.box1.get().strip()
+        clientSocket.send(s.encode('utf-8'))
+        check = clientSocket.recv(10)
+
+        s = self.tab8.Path2.get("1.0", END).strip()
+        clientSocket.send(s.encode('utf-8'))
+        check = clientSocket.recv(10)
+
+        s = self.tab8.Name.get("1.0", END).strip()
+        clientSocket.send(s.encode('utf-8'))
+        check = clientSocket.recv(10)
+
+        s = self.tab8.Value.get("1.0", END).strip()
+        clientSocket.send(s.encode('utf-8'))
+        check = clientSocket.recv(10)
+
+        s = self.tab8.box2.get().strip()
+        clientSocket.send(s.encode('utf-8'))
+
+        message = clientSocket.recv(1024).decode('utf-8')
+        self.tab8.resView.config(state = "normal")
+        self.tab8.resView.insert(END, message + "\n")
+        self.tab8.resView.config(state = "disable")
+
+    def butDelClick(self, event = None):
+        self.tab8.resView.config(state = "normal")
+        self.tab8.resView.delete("1.0", END)
+        self.tab8.resView.config(state = "disable")
+
+    def chooseFunc(self, event = None):
+        func = self.tab8.box1.get().strip()
+        if func == "Get value":
+            self.tab8.Name.config(state = "normal")
+            self.tab8.Value.config(state = "disabled")
+            self.tab8.box2.config(state = "disabled")
+        elif func == "Set value":
+            self.tab8.Name.config(state = "normal")
+            self.tab8.Value.config(state = "normal")
+            self.tab8.box2.config(state = "normal")
+        elif func == "Delete value":
+            self.tab8.Name.config(state = "normal")
+            self.tab8.Value.config(state = "disabled")
+            self.tab8.box2.config(state = "disabled")
+        elif func == "Create key":
+            self.tab8.Name.config(state = "disabled")
+            self.tab8.Value.config(state = "disabled")
+            self.tab8.box2.config(state = "disabled")
+        elif func == "Delete key":
+            self.tab8.Name.config(state = "disabled")
+            self.tab8.Value.config(state = "disabled")
+            self.tab8.box2.config(state = "disabled")
+        else:
+            return
+
+
+
+
 
     def createWidgets(self):
         
@@ -714,18 +812,18 @@ class Client(tk.Frame):
         self.txtIP.bind("<Key-Return>", self.butConnectClick)
         
         #flat, groove, raised, ridge, solid, or sunken
-        self.butConnect = tk.Button(self.frame0,text = "Connect",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.butConnect = tk.Button(self.frame0,text = "Connect",font=("Lato",10),relief="groove",bg=outbtnbg,fg=outbtnfg,justify="center",cursor="circle")
         self.butConnect["command"] = self.butConnectClick
         self.butConnect.place(x=20, y=300, height=30, width=100)
 
-        self.butDisconnect = tk.Button(self.frame0,text = "Disconnect",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.butDisconnect = tk.Button(self.frame0,text = "Disconnect",font=("Lato",10),relief="groove",bg=outbtnbg,fg=outbtnfg,justify="center",cursor="circle")
         self.butDisconnect["command"] = self.butDisconnectClick
         self.butDisconnect.place(x=20, y=580, height=30, width=100)
         
         noteBookStyle = ttk.Style(self.frame1)
         noteBookStyle.theme_use('default')
         noteBookStyle.configure("TNotebook", background=appbg, tabposition='wn',cursor="circle")
-        noteBookStyle.configure("TNotebook.Tab", font=('Lato', 8, BOLD), justify="center", background=txtbg, foreground=txtfg, ANCHOR="c",cursor="circle")
+        noteBookStyle.configure("TNotebook.Tab", font=('Lato', 8, BOLD), justify="center", background=txtbg, foreground="white", ANCHOR="c",cursor="circle")
         noteBookStyle.map("TNotebook.Tab", background= [("selected", entryfg)],foreground=[("selected",appbg)])
 
         tabFrameStyle = ttk.Style(self.frame1)
@@ -755,6 +853,7 @@ class Client(tk.Frame):
         self.tab1.tv1 = ttk.Treeview(self.tab1.frame0)
         self.tab1.tv1.place(relheight=1, relwidth=1)
         self.tab1.treescrolly = tk.Scrollbar(self.tab1.frame0, orient="vertical", command=self.tab1.tv1.yview)
+        self.tab1.tv1.config(yscrollcommand=self.tab1.treescrolly.set)
         self.tab1.treescrolly.pack(side="right", fill="y")
         self.tab1.tv1["columns"] = ("1", "2", "3")
         self.tab1.tv1["show"] = "headings"
@@ -808,6 +907,7 @@ class Client(tk.Frame):
         self.tab2.tv1 = ttk.Treeview(self.tab2.frame0)
         self.tab2.tv1.place(relheight=1, relwidth=1)
         self.tab2.treescrolly = tk.Scrollbar(self.tab2.frame0, orient="vertical", command=self.tab2.tv1.yview)
+        self.tab2.tv1.config(yscrollcommand=self.tab2.treescrolly.set)
         self.tab2.treescrolly.pack(side="right", fill="y")
         self.tab2.tv1["columns"] = ("1", "2", "3")
         self.tab2.tv1["show"] = "headings"
@@ -887,6 +987,7 @@ class Client(tk.Frame):
         self.tab3.tv1 = ttk.Treeview(self.tab3.frame0)
         self.tab3.tv1.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame0, orient="vertical", command=self.tab3.tv1.yview)
+        self.tab3.tv1.config(yscrollcommand=self.tab3.treescrolly.set)
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv1["columns"] = ("1", "2", "3")
         self.tab3.tv1["show"] = "headings"
@@ -909,6 +1010,7 @@ class Client(tk.Frame):
         self.tab3.tv2 = ttk.Treeview(self.tab3.frame1)
         self.tab3.tv2.place(relheight=1, relwidth=1)
         self.tab3.treescrolly = tk.Scrollbar(self.tab3.frame1, orient="vertical", command=self.tab3.tv2.yview)
+        self.tab3.tv2.config(yscrollcommand=self.tab3.treescrolly.set)
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv2["columns"] = ("1", "2", "3")
         self.tab3.tv2["show"] = "headings"
@@ -968,6 +1070,10 @@ class Client(tk.Frame):
         self.tab4.KeyView.insert(INSERT, self.tab4.KeyLog)
         self.tab4.KeyView.config(state="disabled")
         self.tab4.KeyView.place(x=0,y=0,height=522,width=477)
+        self.tab4.treescrolly = tk.Scrollbar(self.tab4.frame1, orient="vertical", command=self.tab4.KeyView.yview)
+        self.tab4.KeyView.config(yscrollcommand=self.tab4.treescrolly.set)
+        self.tab4.treescrolly.pack(side="right", fill="y")
+        
 
 
 
@@ -985,6 +1091,9 @@ class Client(tk.Frame):
         self.tab5.MACView = tk.Text(self.tab5.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
         self.tab5.MACs = []
         self.tab5.MACView.place(x=0,y=0,height=505,width=475)
+        self.tab5.treescrolly = tk.Scrollbar(self.tab5.frame1, orient="vertical", command=self.tab5.MACView.yview)
+        self.tab5.MACView.config(yscrollcommand=self.tab5.treescrolly.set)
+        self.tab5.treescrolly.pack(side="right", fill="y")
 
         self.tab5.butGetMAC = tk.Button(self.tab5,text="Get MAC Address",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab5.butGetMAC["command"] = self.butGetMACClick
@@ -1003,7 +1112,7 @@ class Client(tk.Frame):
         self.tab6.butLogOut["command"] = self.butLogOutClick
         self.tab6.butLogOut.place(x=20, y=20, height=30, width=100)
 
-        self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg="red",fg="white",justify="center",cursor="circle")
+        self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab6.butShutDown["command"] = self.butShutDownClick
         self.tab6.butShutDown.place(x=20, y=70, height=30, width=100)
 
@@ -1036,11 +1145,84 @@ class Client(tk.Frame):
         self.tab8.img = ImageTk.PhotoImage(tab8Img)
         self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLER",image=self.tab8.img,compound=tk.TOP)
 
+        self.tab8.frame = tk.LabelFrame(self.tab8,text="File Path",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
+        self.tab8.frame.place(x=20, y=20, height=60, width=350)
+        self.tab8.Path1 = tk.Text(self.tab8.frame,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.Path1.insert(INSERT, "")
+        self.tab8.Path1.place(x=0, y=0, height=40, width=345)
+        self.tab8.Path1.config(state="disabled")
+        
+        self.tab8.butBrowse = tk.Button(self.tab8, text = "Browse",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.tab8.butBrowse["command"] = self.butBrowseClick
+        self.tab8.butBrowse.place(x=400, y=25, height=55, width=100)
 
+        self.tab8.frame0 = tk.LabelFrame(self.tab8,text="File Path",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
+        self.tab8.frame0.place(x=20, y=100, height=200, width=350)
+        self.tab8.Content = tk.Text(self.tab8.frame0,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.Content.insert(INSERT, "")
+        self.tab8.Content.place(x=0, y=0, height=180, width=345)
+        self.tab8.treescrolly1 = tk.Scrollbar(self.tab8.frame0, orient="vertical", command=self.tab8.Content.yview)
+        self.tab8.Content.config(yscrollcommand=self.tab8.treescrolly1.set)
+        self.tab8.treescrolly1.pack(side="right", fill="y")
+        
+        self.tab8.butSend1 = tk.Button(self.tab8, text = "Send content",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.tab8.butSend1["command"] = self.butSend1Click
+        self.tab8.butSend1.place(x=400, y=105, height=195, width=100)
 
+        self.tab8.frame1 = tk.LabelFrame(self.tab8, text="Edit value directly",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
+        self.tab8.frame1.place(x=20, y=315, height=300, width=480)
+
+        comboboxStyle = ttk.Style()
+        comboboxStyle.configure("TCombobox", font=('Lato', 8), background="white", foreground=txtfg,fieldbackground= "black",insertbackground="white",cursor="circle")
+        comboboxStyle.configure("TCombobox.Menu", font=('Lato', 8), background=txtbg, foreground="white",fieldbackground= "black", ANCHOR="c",cursor="circle")
+
+        func = ('Get value', 'Set value', 'Delete value', 'Create key', 'Delete key')
+        self.tab8.func = tk.StringVar()
+        self.tab8.func.set("Choose function")
+        self.tab8.box1 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.func)
+        self.tab8.box1['values'] = func
+        self.tab8.box1.place(x=20, y=10, height = 30, width=435)
+        self.tab8.box1.bind('<<ComboboxSelected>>', self.chooseFunc)
+
+        self.tab8.Path2 = tk.Text(self.tab8.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.Path2.insert(INSERT, "Input file path")
+        self.tab8.Path2.place(x=20, y=50, height=30, width=435)  
+
+        self.tab8.Name = tk.Text(self.tab8.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.Name.insert(INSERT, "Name value")
+        self.tab8.Name.place(x=20, y=100, height=30, width=133)
+
+        self.tab8.Value = tk.Text(self.tab8.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.Value.insert(INSERT, "Value")
+        self.tab8.Value.place(x=173, y=100, height=30, width=133)
+        
+        dataType = ('String', 'Binary', 'DWORD', 'QWORD', 'Multi-String', 'Expandable String')
+        self.tab8.dataType = tk.StringVar()
+        self.tab8.dataType.set("Data 's type")
+        self.tab8.box2 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.dataType)
+        self.tab8.box2['values'] = dataType
+        self.tab8.box2.place(x=326, y=100, height = 30, width=129)
+
+        self.tab8.frame2 = tk.LabelFrame(self.tab8.frame1,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle")
+        self.tab8.frame2.place(x=20, y=150, height=60, width=435)
+        self.tab8.resView = tk.Text(self.tab8.frame2,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
+        self.tab8.resView.insert(INSERT, "")
+        self.tab8.resView.place(x=0, y=0, height=55, width=425)
+        self.tab8.treescrolly2 = tk.Scrollbar(self.tab8.frame2, orient="vertical", command=self.tab8.resView.yview)
+        self.tab8.resView.config(yscrollcommand=self.tab8.treescrolly2.set)
+        self.tab8.treescrolly2.pack(side="right", fill="y")
+        self.tab8.resView.config(state = "disable")
+
+        self.tab8.butSend2 = tk.Button(self.tab8.frame1, text = "Send",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.tab8.butSend2["command"] = self.butSend2Click
+        self.tab8.butSend2.place(x=130, y=230, height=30, width=100)
+
+        self.tab8.butDel = tk.Button(self.tab8.frame1, text = "Delete",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
+        self.tab8.butDel["command"] = self.butDelClick
+        self.tab8.butDel.place(x=250, y=230, height=30, width=100)
 
     #------------------------------------------------------------
-        for i in range(0,7):
+        for i in range(0,8):
             self.tabControl.tab(i,state="disabled")
 
 
