@@ -5,7 +5,6 @@ from PIL import ImageGrab
 import json
 import subprocess
 import sys
-import win32com.shell.shell as shell
 import threading
 import winreg
 
