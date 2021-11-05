@@ -12,8 +12,10 @@ class PowerController():
             if not request:
                 break
             if request == "shutdown":
+                print("shutdown")
                 self.shutdown()
             elif request == "logout":   
+                print("logout")
                 self.logout()
             else: #Quit
                 return

