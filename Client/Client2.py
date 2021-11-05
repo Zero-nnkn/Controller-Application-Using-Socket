@@ -258,7 +258,6 @@ class Client(tk.Frame):
         # self.tabControl.select(0)
         # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
 
-
     def butDisconnectClick(self, event = None):
         s = "EXIT"
         clientSocket.send(s.encode('utf-8'))
@@ -307,6 +306,37 @@ class Client(tk.Frame):
 
 
     #--------------------TAB1 2 APP PROCESS----------------------------------------
+    def doTab12Popup(self,event):
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            tab = self.tab1
+        elif tabName == "PROCESSES\nCONTROLER":
+            tab = self.tab2
+        try:
+            tab.popup.selection = tab.tv1.set(tab.tv1.identify_row(event.y))
+            tab.popup.post(event.x_root, event.y_root)
+        finally:
+            tab.popup.grab_release()
+    
+    def killRightClick(self):
+        if not self.checkConnected():
+            return
+        s = "kill"
+        clientSocket.send(s.encode('utf-8'))
+        tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        if tabName == "APPS\nCONTROLER":
+            id = self.tab1.popup.selection
+        elif tabName == "PROCESSES\nCONTROLER":
+            id = self.tab2.popup.selection
+        if id == {}: return
+        clientSocket.send(id["2"].encode('utf-8'))
+        buffer = clientSocket.recv(4096)
+        if not buffer:
+            return
+        message = buffer.decode('utf-8')
+        print(message)
+        messagebox.showinfo("", message,parent = self)
+
     def clearTreeView(self, tree):
         rows = tree.get_children()
         if rows != '()':
@@ -379,14 +409,14 @@ class Client(tk.Frame):
 
 
     #--------------------TAB3 FTP----------------------------------------
-    def do_popup1(self,event):
+    def doTab3Popup1(self,event):
         try:
             self.tab3.popup1.selection = self.tab3.tv1.set(self.tab3.tv1.identify_row(event.y))
             self.tab3.popup1.post(event.x_root, event.y_root)
         finally:
             self.tab3.popup1.grab_release()
 
-    def do_popup2(self,event):
+    def doTab3Popup2(self,event):
         try:
             self.tab3.popup2.selection = self.tab3.tv2.set(self.tab3.tv2.identify_row(event.y))
             self.tab3.popup2.post(event.x_root, event.y_root)
@@ -484,6 +514,25 @@ class Client(tk.Frame):
         self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
         self.tab3.serverPathtxt.configure(state="disabled")
 
+    def serverViewFolder(self, folderName):
+        if not self.checkConnected():
+            return
+        clientSocket.send(folderName.encode('utf-8'))
+        self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
+        size = int(clientSocket.recv(10).decode('utf-8'))
+        clientSocket.send("OK".encode('utf-8'))
+        buffer = "".encode("utf-8")
+        while size > 0:
+               data = clientSocket.recv(4096)
+               size -= len(data)
+               buffer += data
+        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
+        self.tab3.serverPathtxt.configure(state="normal")
+        self.tab3.serverPathtxt.delete('1.0', END)
+        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+        self.tab3.serverPathtxt.configure(state="disabled")
+
     def clientOnDoubleClick(self, event = None):
         item = self.tab3.tv1.selection()[0]
         folderName = self.tab3.tv1.item(item,"value")[0]
@@ -502,21 +551,31 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         item = self.tab3.tv2.selection()[0]
         folderName = self.tab3.tv2.item(item,"value")[0]
-        clientSocket.send(folderName.encode('utf-8'))
-        self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
-        size = int(clientSocket.recv(10).decode('utf-8'))
-        clientSocket.send("OK".encode('utf-8'))
-        buffer = "".encode("utf-8")
-        while size > 0:
-               data = clientSocket.recv(4096)
-               size -= len(data)
-               buffer += data
-        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
-        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
-        self.tab3.serverPathtxt.configure(state="normal")
-        self.tab3.serverPathtxt.delete('1.0', END)
-        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
-        self.tab3.serverPathtxt.configure(state="disabled")
+        self.serverViewFolder(folderName)    
+
+    def copyToClient(self):
+        if not self.checkConnected():
+            return
+        s = "copy2client"
+        clientSocket.send(s.encode('utf-8'))
+        info = self.tab3.popup1.selection["1"]
+        clientSocket.send(info.encode('utf-8'))
+        self.recvFolder(self.tab3.clientPath)
+        self.displayInfo(self.tab3.tv1,self.getFolderInfo(self.tab3.clientPath))
+
+    def deleteClientFile(self):
+        info = self.tab3.popup1.selection["1"]
+        path = os.path.join(self.tab3.clientPath,info)
+        if(os.path.isfile(path)):
+            os.remove(path)
+        elif(os.path.isdir(path)):
+            try:
+                shutil.rmtree(path)
+            except OSError as e:
+                print("Error: %s - %s." % (e.filename, e.strerror))
+        else:
+            return
+        self.displayInfo(self.tab3.tv1,self.getFolderInfo(self.tab3.clientPath))
 
     def copyToServer(self):
         if not self.checkConnected():
@@ -527,14 +586,18 @@ class Client(tk.Frame):
         clientSocket.send(info.encode('utf-8'))
         pathSend = os.path.join(self.tab3.clientPath,info)
         self.sendData(pathSend)
+        serverPath,tail = os.path.split(self.tab3.serverPath)
+        self.serverViewFolder(tail)
 
-    def deleteFile(self):
+    def deleteServerFile(self):
         if not self.checkConnected():
             return
         s = "delete"
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup1.selection["1"]
         clientSocket.send(info.encode('utf-8'))
+        serverPath,tail = os.path.split(self.tab3.serverPath)
+        self.serverViewFolder(tail)
 
     def sendData(self, path):
         if(os.path.isfile(path)):
@@ -581,6 +644,52 @@ class Client(tk.Frame):
                 print(f'Sending {relpath}')
                 self.sendFile(fullPath, relpath)
 
+    def recvFolder(self, desPath):
+        with clientSocket, clientSocket.makefile('rb') as clientfile:
+            while True:
+                raw = clientfile.readline()
+                if not raw: break # no more files, server closed connection.
+
+                filename = raw.strip().decode()
+                length = int(clientfile.readline())
+                print(f'Downloading {filename}...\n  Expecting {length:,} bytes...',end='',flush=True)
+
+                path = os.path.join(desPath,filename)
+                os.makedirs(os.path.dirname(path),exist_ok=True)
+
+                # Check if exists
+                if os.path.exists(path):
+                    clientSocket.sendall("exists".encode())
+                    request = self.recv(20).decode()
+                    if request == "pause":
+                        continue
+                    elif request == "rename":
+                        i = 1
+                        while os.path.exists(path) == True:
+                            dir, fileName = os.path.split(path)
+                            fileName = "Copy {i} of " + fileName 
+                            path = os.path.join(dir, fileName)
+                            i += 1
+                    else:
+                        pass
+                else:
+                    clientSocket.sendall("not exists".encode())   
+
+                # Read the data in chunks so it can handle large files.
+                with open(path,'wb') as f:
+                    while length:
+                        chunk = min(length,CHUNKSIZE)
+                        data = clientfile.read(chunk)
+                        if not data: break
+                        f.write(data)
+                        length -= len(data)
+                    else: # only runs if while doesn't break and length==0
+                        print('Complete')
+                        continue
+
+                # socket was closed early.
+                print('Incomplete')
+                break 
 
 
 
@@ -621,7 +730,7 @@ class Client(tk.Frame):
         self.tab4.KeyView.config(state="disabled")
         self.tab4.KeyLog = "" 
 
-    def butDelClick(self):
+    def butDelClick4(self):
         self.tab4.keyLog = ""
         self.tab4.KeyView.config(state="normal")
         self.tab4.KeyView.delete('1.0','end')
@@ -864,7 +973,17 @@ class Client(tk.Frame):
         self.tab1.tv1.column(2, width = 75)
         self.tab1.tv1.column(3, width = 75)
         self.tab1.data = []
-        
+        self.tab1.popup = tk.Menu(self.tab1, tearoff=0,bg=txtbg,fg=txtfg,font=("Lato",10,BOLD))
+        self.tab1.popup.add_command(label="Kill", command=self.killRightClick)
+        self.tab1.popup.add_separator()
+        self.tab1.tv1.bind("<Button-3>", self.doTab12Popup)
+
+        for i in range(100):
+            row=["Coc Coc",i,"1234567"]
+            self.tab1.tv1.insert("", "end", values=row, tags="a")
+            self.tab1.tv1.tag_configure("a", background=txtbg, foreground=txtfg)
+
+
         self.tab1.butRefresh = tk.Button(self.tab1,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab1.butRefresh["command"] = self.butRefreshClick
         self.tab1.butRefresh.place(x=20, y=535, height=80, width=120)
@@ -918,6 +1037,16 @@ class Client(tk.Frame):
         self.tab2.tv1.column(2, width = 75)
         self.tab2.tv1.column(3, width = 75)
         self.tab2.data = []
+        self.tab2.popup = tk.Menu(self.tab2, tearoff=0,bg=txtbg,fg=txtfg,font=("Lato",10,BOLD))
+        self.tab2.popup.add_command(label="Kill", command=self.killRightClick)
+        self.tab2.popup.add_separator()
+        self.tab2.tv1.bind("<Button-3>", self.doTab12Popup)
+
+
+        for i in range(100):
+            row=["Coc Coc",i,"1234567"]
+            self.tab2.tv1.insert("", "end", values=row, tags="a")
+            self.tab2.tv1.tag_configure("a", background=txtbg, foreground=txtfg)
         
         self.tab2.butRefresh = tk.Button(self.tab2,text = "Refresh",font=("Lato",15),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab2.butRefresh["command"] = self.butRefreshClick
@@ -991,19 +1120,20 @@ class Client(tk.Frame):
         self.tab3.treescrolly.pack(side="right", fill="y")
         self.tab3.tv1["columns"] = ("1", "2", "3")
         self.tab3.tv1["show"] = "headings"
-        self.tab3.tv1.heading(1, text = "Filename")
-        self.tab3.tv1.heading(2, text = "Filesize")
-        self.tab3.tv1.heading(3, text = "Filetype")
+        self.tab3.tv1.heading(1, text = "Name")
+        self.tab3.tv1.heading(2, text = "Size")
+        self.tab3.tv1.heading(3, text = "Item type")
         self.tab3.tv1.column(1, width = 70)
         self.tab3.tv1.column(2, width = 40)
         self.tab3.tv1.column(3, width = 40)
         self.tab3.clientInfos = []
         self.tab3.tv1.bind("<Double-1>", self.clientOnDoubleClick)
 
-        self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg)
+        self.tab3.popup1 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg,font=("Lato",10,BOLD))
         self.tab3.popup1.add_command(label="Send", command=self.copyToServer)
+        self.tab3.popup1.add_command(label="Delete", command=self.deleteClientFile)
         self.tab3.popup1.add_separator()
-        self.tab3.tv1.bind("<Button-3>", self.do_popup1)
+        self.tab3.tv1.bind("<Button-3>", self.doTab3Popup1)
 
         self.tab3.frame1 = tk.Frame(self.tab3,background=appbg)
         self.tab3.frame1.place(x=420, y=140, height=480, width=380)
@@ -1027,10 +1157,11 @@ class Client(tk.Frame):
             self.tab3.tv2.insert("", "end", values=row, tags="a")
             self.tab3.tv2.tag_configure("a", background=txtbg, foreground=txtfg)
 
-        self.tab3.popup2 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg)
-        self.tab3.popup2.add_command(label="Delete", command=self.deleteFile)
+        self.tab3.popup2 = tk.Menu(self.tab3, tearoff=0,bg=txtbg,fg=txtfg,font=("Lato",10,BOLD))
+        self.tab3.popup2.add_command(label="Get", command=self.copyToClient)
+        self.tab3.popup2.add_command(label="Delete", command=self.deleteServerFile)
         self.tab3.popup2.add_separator()
-        self.tab3.tv2.bind("<Button-3>", self.do_popup2)
+        self.tab3.tv2.bind("<Button-3>", self.doTab3Popup2)
 
 
 
@@ -1060,7 +1191,7 @@ class Client(tk.Frame):
         self.tab4.butPrint.place(x=320, y=20, height=50, width=80)
    
         self.tab4.butDel = tk.Button(self.tab4, text = "Delete",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
-        self.tab4.butDel["command"] = self.butDelClick
+        self.tab4.butDel["command"] = self.butDelClick4
         self.tab4.butDel.place(x=420, y=20, height=50, width=80)
 
         self.tab4.frame1 = tk.LabelFrame(self.tab4, text="")
