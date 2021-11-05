@@ -287,7 +287,7 @@ class Client(tk.Frame):
         elif tabName == "POWER\nCONTROLER":
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLER":
-            s = "STREAMING"
+            s = "STREAM"
         elif tabName == "REGISTRY\nCONTROLER":
             s = "REGISTRY"
         clientSocket.send(s.encode('utf-8'))
@@ -296,7 +296,7 @@ class Client(tk.Frame):
             self.root.geometry("1040x635")
             self.frame1.place(width=900)
             self.gettingStarted()
-        elif s == "STREAMING":
+        elif s == "STREAM":
             self.root.geometry("1040x635")
             self.frame1.place(width=900)
             
