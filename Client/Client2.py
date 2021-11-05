@@ -206,6 +206,7 @@ class StreamingServer:
             '''
             global canvas
             img = ImageTk.PhotoImage(Image.fromarray(frame))  
+            self.tab7.root.mainloop() 
             self.tab7.main_label.configure(image=img) 
             self.tab7.main_label.image = img
 
@@ -1246,15 +1247,19 @@ class Client(tk.Frame):
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER",image=self.tab7.img,compound=tk.TOP)
 
-        self.tab7.main_label = Label(self.tab7)
-        self.tab7.main_label.grid()
-        self.tab7.main_label.place(x=20,y=20,height=525,width=780)
-        self.tab7.main_label.configure(bg="black",bd=2)
+        # self.tab7.main_label = Label(self.tab7)
+        # self.tab7.main_label.grid()
+        # self.tab7.main_label.place(x=20,y=20,height=525,width=780)
+        # self.tab7.main_label.configure(bg="black",bd=2)
 
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Streaming",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
 
+        self.tab7.root = tk.Toplevel()  
+        self.tab7.main_label = Label(self.tab7.root)
+        self.tab7.main_label.grid()
+        # self.tab7.root.mainloop() 
 
 
 
