@@ -35,7 +35,7 @@ class StreamingClient:
         start_stream : starts the client stream in a new thread
     """
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, clientSocket):
         """
         Creates a new instance of StreamingClient.
         Parameters
@@ -49,7 +49,13 @@ class StreamingClient:
         self.__port = port
         self._configure()
         self.__running = False
+
+        #client socket to recv request
+        self.__client = clientSocket 
+
+        # client socket to recv video
         self.__client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
 
     def startListening(self):
         request = ""
@@ -57,6 +63,7 @@ class StreamingClient:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
+            print("request")
             if request == "stream":
                 self.start_stream()
             else: #Quit
@@ -156,7 +163,7 @@ class ScreenShareClient(StreamingClient):
         start_stream : starts the screen sharing stream in a new thread
     """
 
-    def __init__(self, host, port, x_res=1024, y_res=576):
+    def __init__(self, host, port, clientSocket, x_res=1024, y_res=576):
         """
         Creates a new instance of ScreenShareClient.
         Parameters
@@ -172,7 +179,7 @@ class ScreenShareClient(StreamingClient):
         """
         self.__x_res = x_res
         self.__y_res = y_res
-        super(ScreenShareClient, self).__init__(host, port)
+        super(ScreenShareClient, self).__init__(host, port, clientSocket)
 
     def _get_frame(self):
         """
