@@ -54,7 +54,7 @@ class StreamingClient:
         self.__client = clientSocket 
 
         # client socket to recv video
-        self.__client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__client_socket = None
 
 
     def startListening(self):
@@ -66,8 +66,12 @@ class StreamingClient:
             print(request)
             if request == "stream":
                 self.start_stream()
-            else: #Quit
+            elif request == "stop":
                 self.stop_stream()
+            else:
+                self.stop_stream()
+                return
+                
 
     def _configure(self):
         """
@@ -94,6 +98,7 @@ class StreamingClient:
         """
         Main method for streaming the client data.
         """
+        self.__client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__client_socket.connect((self.__host, self.__port))
         while self.__running:
             frame = self._get_frame()
@@ -103,11 +108,7 @@ class StreamingClient:
 
             try:
                 self.__client_socket.sendall(struct.pack('>L', size) + data)
-            except ConnectionResetError:
-                self.__running = False
-            except ConnectionAbortedError:
-                self.__running = False
-            except BrokenPipeError:
+            except:
                 self.__running = False
 
         self._cleanup()

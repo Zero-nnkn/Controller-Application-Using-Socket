@@ -49,17 +49,25 @@ txtfg = "#0bcdf2"
 
 
 
+FLAG_CLOSE = 0
 
-def CloseButton(root):
+def closeButton(root, FLAG_CLOSE):
+    if FLAG_CLOSE == 0:
+        closeClient(root)
+    elif FLAG_CLOSE == 1:
+        closeStream(root)
+
+
+def closeClient(root):
     s = "EXIT"
     clientSocket.send(s.encode("utf-8"))
     root.destroy()
 
-def CloseStreamd(root):
+def closeStream(root):
     global streamSocket 
-    s = "quit"
-    streamSocket.send(s.encode("utf-8"))
-    streamSocket.close()
+    s = "stop"
+    clientSocket.send(s.encode("utf-8"))
+    streamSocket.stop_server()
     streamSocket = None
     root.destroy()
 
@@ -98,7 +106,7 @@ class StreamingServer:
     """
 
     # TODO: Implement slots functionality
-    def __init__(self, host, port, screen, quit_key='q'):
+    def __init__(self, host, port, screen):
         """
         Creates a new instance of StreamingServer
         Parameters
@@ -115,16 +123,18 @@ class StreamingServer:
         self.__host = host
         self.__port = port
         self.__running = False
-        self.__quit_key = quit_key
         self.__block = threading.Lock()
-        self.__server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__server_socket = None
         self.__screen = screen
+        #self.__screen.bind('<Configure>', self.resizeImage)
+        self.__img = None
         self.__init_socket()
 
     def __init_socket(self):
         """
         Binds the server socket to the given host and port
         """
+        self.__server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__server_socket.bind((self.__host, self.__port))
 
     def start_server(self):
@@ -162,6 +172,7 @@ class StreamingServer:
             closing_connection.close()
             self.__block.acquire()
             self.__server_socket.close()
+            self.__server_socket = None
             self.__block.release()
         else:
             print("Server not running!")
@@ -201,6 +212,7 @@ class StreamingServer:
 
             frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
             frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             #----------TO DO----------
             # Thay vì show lên cv2 thì show lên tkinter
@@ -213,11 +225,16 @@ class StreamingServer:
                 break
 
             '''
-            cv2.imshow("",img)
-            img = ImageTk.PhotoImage(Image.fromarray(frame))  
+
+
             #self.tab7.root.mainloop() 
-            self.__screen.configure(image=img) 
-            self.__screen.image = img
+            try:
+                #frame = cv2.resize(frame,(self.__screen.winfo_width(), self.__screen.winfo_height()))
+                self.__img = ImageTk.PhotoImage(Image.fromarray(frame))  
+                self.__screen.configure(image=self.__img) 
+                self.__screen.image = self.__img
+            except:
+                self.__running = False
             #self.tab7.main_label.configure(image=img) 
             #self.tab7.main_label.image = img
 
@@ -620,6 +637,7 @@ class Client(tk.Frame):
         clientSocket.send(info.encode('utf-8'))
         serverPath,tail = os.path.split(self.tab3.serverPath)
         self.serverViewFolder(tail)
+        
 
     def sendData(self, path):
         if(os.path.isfile(path)):
@@ -813,11 +831,17 @@ class Client(tk.Frame):
 
     #--------------------TAB7 STREAM----------------------------------------
     def butStartRecording(self):
+        global streamSocket
         if not self.checkConnected():
            return
-        streamSocket = StreamingServer("localhost", PORT_STREAM, screen=self.tab7.main_label)
+        window = tk.Toplevel()  
+        screen = Label(window)
+        window.protocol('WM_DELETE_WINDOW', lambda: closeButton(window,1))
+        screen.grid()
+
+        streamSocket = StreamingServer("localhost", PORT_STREAM, screen=screen)
         streamSocket.start_server()  
-        self.tab7.root.mainloop() 
+ 
         clientSocket.send("stream".encode())      
 
 
@@ -1277,11 +1301,7 @@ class Client(tk.Frame):
         self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
 
-        self.tab7.root = tk.Toplevel()  
-        root.protocol('WM_DELETE_WINDOW', lambda: CloseStream(root))
-        self.tab7.main_label = Label(self.tab7.root)
-        self.tab7.main_label.grid()
-        # self.tab7.root.mainloop() 
+
 
 
 
@@ -1375,6 +1395,6 @@ class Client(tk.Frame):
 
 
 root=tk.Tk()
-root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+root.protocol('WM_DELETE_WINDOW', lambda: closeButton(root,0))
 controler=Client(root)
 root.mainloop()
