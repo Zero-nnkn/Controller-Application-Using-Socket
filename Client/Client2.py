@@ -563,11 +563,10 @@ class Client(tk.Frame):
         self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
         self.tab3.serverPathtxt.configure(state="disabled")
 
-    def serverViewFolder(self, folderName):
+    def serverViewFolder(self):
         if not self.checkConnected():
             return
-        clientSocket.send(folderName.encode('utf-8'))
-        self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
+        clientSocket.send(self.tab3.serverPath.encode('utf-8'))
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
         buffer = "".encode("utf-8")
@@ -604,6 +603,7 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         item = self.tab3.tv2.selection()[0]
         folderName = self.tab3.tv2.item(item,"value")[0]
+        self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
         self.serverViewFolder(folderName)    
 
     def copyToClient(self):
@@ -639,8 +639,7 @@ class Client(tk.Frame):
         clientSocket.send(info.encode('utf-8'))
         pathSend = os.path.join(self.tab3.clientPath,info)
         self.sendData(pathSend)
-        serverPath,tail = os.path.split(self.tab3.serverPath)
-        self.serverViewFolder(tail)
+        self.serverViewFolder(self.tab3.serverPath)
 
     def deleteServerFile(self):
         if not self.checkConnected():
@@ -649,9 +648,7 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
-        serverPath,tail = os.path.split(self.tab3.serverPath)
-        print(tail)
-        self.serverViewFolder(tail)
+        self.serverViewFolder(self.tab3.serverPath)
         
 
     def sendData(self, path):
