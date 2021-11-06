@@ -5,8 +5,7 @@ from PIL import ImageGrab
 import json
 import subprocess
 import sys
-import threading
-import winreg
+import ctypes
 
 import appController
 import processController
@@ -242,11 +241,23 @@ class Server(tk.Frame):
 def CloseButton(root):
     root.destroy()
 
-root = tk.Tk()
-root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
-app = Server(root)
-app.master.title("Server")
-app.master.minsize(210, 100)
-app.mainloop()
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
+if is_admin():
+    # Code of your program here
+    root = tk.Tk()
+    root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+    app = Server(root)
+    app.master.title("Server")
+    app.master.minsize(210, 100)
+    app.mainloop()
+else:
+    # Re-run the program with admin rights
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+
 
 
