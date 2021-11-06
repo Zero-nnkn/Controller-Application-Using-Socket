@@ -246,7 +246,7 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
-
+'''
 if is_admin():
     # Code of your program here
     root = tk.Tk()
@@ -258,6 +258,11 @@ if is_admin():
 else:
     # Re-run the program with admin rights
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+'''
 
-
-
+root = tk.Tk()
+root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+app = Server(root)
+app.master.title("Server")
+app.master.minsize(210, 100)
+app.mainloop()
