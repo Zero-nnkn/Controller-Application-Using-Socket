@@ -49,13 +49,11 @@ class FtpController():
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            if request=="view":
+            if request == "view":
+                # fullpath view
                 info = self.__client.recv(1024).decode("utf-8")
-                if info == self.currentPath: #refresh
-                    self.sendFolderInfo(self.currentPath)
-                    continue
-                if os.path.exists(os.path.join(self.currentPath, info)):
-                    self.currentPath = os.path.join(self.currentPath, info)
+                if os.path.exists(info):
+                    self.currentPath = info
                     self.sendFolderInfo(self.currentPath)
             elif request == "back":
                 l = len(self.currentPath)
