@@ -63,7 +63,7 @@ class StreamingClient:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            print("request")
+            print(request)
             if request == "stream":
                 self.start_stream()
             else: #Quit

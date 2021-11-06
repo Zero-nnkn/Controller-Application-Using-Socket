@@ -51,8 +51,16 @@ txtfg = "#0bcdf2"
 
 
 def CloseButton(root):
-    s = "Quit"
+    s = "EXIT"
     clientSocket.send(s.encode("utf-8"))
+    root.destroy()
+
+def CloseStreamd(root):
+    global streamSocket 
+    s = "quit"
+    streamSocket.send(s.encode("utf-8"))
+    streamSocket.close()
+    streamSocket = None
     root.destroy()
 
 
@@ -90,7 +98,7 @@ class StreamingServer:
     """
 
     # TODO: Implement slots functionality
-    def __init__(self, host, port, quit_key='q'):
+    def __init__(self, host, port, screen, quit_key='q'):
         """
         Creates a new instance of StreamingServer
         Parameters
@@ -110,6 +118,7 @@ class StreamingServer:
         self.__quit_key = quit_key
         self.__block = threading.Lock()
         self.__server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__screen = screen
         self.__init_socket()
 
     def __init_socket(self):
@@ -204,11 +213,13 @@ class StreamingServer:
                 break
 
             '''
-            global canvas
+            cv2.imshow("",img)
             img = ImageTk.PhotoImage(Image.fromarray(frame))  
-            self.tab7.root.mainloop() 
-            self.tab7.main_label.configure(image=img) 
-            self.tab7.main_label.image = img
+            #self.tab7.root.mainloop() 
+            self.__screen.configure(image=img) 
+            self.__screen.image = img
+            #self.tab7.main_label.configure(image=img) 
+            #self.tab7.main_label.image = img
 
             #----------TO DO----------
 
@@ -260,15 +271,23 @@ class Client(tk.Frame):
         # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
 
     def butDisconnectClick(self, event = None):
+        global clientSocket
+        s = "quit"
+        clientSocket.send(s.encode('utf-8'))
         s = "EXIT"
         clientSocket.send(s.encode('utf-8'))
-        for i in range(0,7):
+        clientSocket.close()
+        clientSocket = None
+        for i in range(0,8):
                 self.tabControl.tab(i,state="disabled")
+        self.firstChanged = True
 
     def on_tab_change(self,event=None):
+        if  clientSocket == None:
+            return
+
         if self.firstChanged == False:
             clientSocket.send("quit".encode('utf-8'))
-            print(1)
         else: self.firstChanged = False
 
         self.root.geometry("740x635")
@@ -796,8 +815,10 @@ class Client(tk.Frame):
     def butStartRecording(self):
         if not self.checkConnected():
            return
-        streamSocket = StreamingServer("localhost", PORT_STREAM)
-        streamSocket.start_server()        
+        streamSocket = StreamingServer("localhost", PORT_STREAM, screen=self.tab7.main_label)
+        streamSocket.start_server()  
+        self.tab7.root.mainloop() 
+        clientSocket.send("stream".encode())      
 
 
 
@@ -834,9 +855,9 @@ class Client(tk.Frame):
         messagebox.showinfo("", message,parent = self.tab8)
 
     def butSend2Click(self, event = None):
-        s = "send"
+        s = "edit"
+        print(s)
         clientSocket.send(s.encode('utf-8'))
-        check = clientSocket.recv(10)
 
         s = self.tab8.box1.get().strip()
         clientSocket.send(s.encode('utf-8'))
@@ -1257,6 +1278,7 @@ class Client(tk.Frame):
         self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
 
         self.tab7.root = tk.Toplevel()  
+        root.protocol('WM_DELETE_WINDOW', lambda: CloseStream(root))
         self.tab7.main_label = Label(self.tab7.root)
         self.tab7.main_label.grid()
         # self.tab7.root.mainloop() 
@@ -1353,6 +1375,6 @@ class Client(tk.Frame):
 
 
 root=tk.Tk()
-#root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
+root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
 controler=Client(root)
 root.mainloop()

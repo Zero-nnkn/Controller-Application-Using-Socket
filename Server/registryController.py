@@ -14,7 +14,7 @@ class RegistryController():
                 break
             if request == "reg":
                 self.addRegFile()
-            elif request == "send":   
+            elif request == "edit":   
                 self.editReg()
             else: #Quit
                 return
@@ -41,32 +41,25 @@ class RegistryController():
         self.__client.sendall(s.encode("utf-8"))
 
     def editReg(self):
-        print("Send")
         option = self.__client.recv(1024).decode("utf-8")
         self.__client.sendall("OK".encode("utf-8"))
-        print(option)
 
-        print("2")
         link = self.__client.recv(1024).decode("utf-8")
         self.__client.sendall("OK".encode("utf-8"))
-        print(link)
 
-        print("3")
         valueName = self.__client.recv(1024).decode("utf-8")
         self.__client.sendall("OK".encode("utf-8"))
-        print(valueName)
 
-        print("4")
         value = self.__client.recv(1024).decode("utf-8")
         self.__client.sendall("OK".encode("utf-8"))
-        print(value)
 
         typeValue = self.__client.recv(1024).decode("utf-8")
-        print(typeValue)
 
         s = None
         aKey = self.baseRegistryKey(link)
         subKey = self.subKey(link)
+        print(aKey)
+        print(subKey)
         
         if option == "Create key":
             try:
@@ -156,7 +149,8 @@ class RegistryController():
     def getValue(self,aKey,subKey,valueName):
         try:
             key = winreg.OpenKey(aKey,subKey,0, winreg.KEY_ALL_ACCESS)
-            if not key:return "Error"
+            if not key:
+                return "Error"
         except:
             return "Error"
 
