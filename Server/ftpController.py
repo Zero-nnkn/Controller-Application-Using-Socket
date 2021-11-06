@@ -55,9 +55,11 @@ class FtpController():
                     self.currentPath = os.path.join(self.currentPath, info)
                     self.sendFolderInfo(self.currentPath)
             elif request == "back":
-                if self.currentPath[-2] == ":":
+                l = len(self.currentPath)
+                if self.currentPath[l-2:-1] == ":":
                     self.senDrive()
                     self.currentPath == "\\"
+                elif self.currentPath =="": return
                 else:
                     self.currentPath, tail = os.path.split(self.currentPath)
                     self.sendFolderInfo(self.currentPath)
