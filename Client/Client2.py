@@ -563,9 +563,12 @@ class Client(tk.Frame):
         self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
         self.tab3.serverPathtxt.configure(state="disabled")
 
-    def serverViewFolder(self):
+    def viewServerFolder(self,serverPath):
         if not self.checkConnected():
             return
+        s = "view"
+        clientSocket.send(s.encode('utf-8'))
+        self.tab3.serverPath = serverPath
         clientSocket.send(self.tab3.serverPath.encode('utf-8'))
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
@@ -599,21 +602,21 @@ class Client(tk.Frame):
             return
         if self.tab3.tv2.selection() == ():
             return
-        s = "view"
-        clientSocket.send(s.encode('utf-8'))
         item = self.tab3.tv2.selection()[0]
         folderName = self.tab3.tv2.item(item,"value")[0]
         self.tab3.serverPath = os.path.join(self.tab3.serverPath,folderName)
-        self.serverViewFolder(folderName)    
+        self.viewServerFolder(self.tab3.serverPath)    
 
     def copyToClient(self):
         if not self.checkConnected():
             return
         s = "copy2client"
         clientSocket.send(s.encode('utf-8'))
-        info = self.tab3.popup1.selection["1"]
+        info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
+        print("ok")
         self.recvFolder(self.tab3.clientPath)
+        print("ok2")
         self.displayInfo(self.tab3.tv1,self.getFolderInfo(self.tab3.clientPath))
 
     def deleteClientFile(self):
@@ -639,7 +642,7 @@ class Client(tk.Frame):
         clientSocket.send(info.encode('utf-8'))
         pathSend = os.path.join(self.tab3.clientPath,info)
         self.sendData(pathSend)
-        self.serverViewFolder(self.tab3.serverPath)
+        self.viewServerFolder(self.tab3.serverPath)
 
     def deleteServerFile(self):
         if not self.checkConnected():
@@ -648,8 +651,8 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
-        self.serverViewFolder(self.tab3.serverPath)
-        
+        print(self.tab3.serverPath)
+        self.viewServerFolder(self.tab3.serverPath)     
 
     def sendData(self, path):
         if(os.path.isfile(path)):
