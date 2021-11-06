@@ -57,10 +57,13 @@ def closeButton(root, FLAG_CLOSE):
     elif FLAG_CLOSE == 1:
         closeStream(root)
 
-
 def closeClient(root):
-    s = "EXIT"
-    clientSocket.send(s.encode("utf-8"))
+    print(clientSocket)
+    try:
+        s = "EXIT"
+        clientSocket.send(s.encode("utf-8"))
+    except:
+        None
     root.destroy()
 
 def closeStream(root):
@@ -256,6 +259,7 @@ class Client(tk.Frame):
             self.root.grab_set()
             self.createWidgets()
             self.firstChanged = True
+            self.FTPStart = True
 
     def checkConnected(self):
         if clientSocket == None:
@@ -280,6 +284,8 @@ class Client(tk.Frame):
                 self.tabControl.tab(i,state="normal")
             self.tabControl.select(0)
             self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
+            self.butDisconnect.config(state="normal")
+            self.butConnect.config(state="disabled")
         else:
             messagebox.showinfo("Error", "Not connected to the server")
         # for i in range(0,8):
@@ -298,6 +304,8 @@ class Client(tk.Frame):
         for i in range(0,8):
                 self.tabControl.tab(i,state="disabled")
         self.firstChanged = True
+        self.butConnect.config(state="normal")
+        self.butDisconnect.config(state="disabled")
 
     def on_tab_change(self,event=None):
         if  clientSocket == None:
@@ -500,20 +508,22 @@ class Client(tk.Frame):
         self.tab3.clientPathtxt.insert(END,self.tab3.clientPath)
 
     def gettingStarted(self):
-        self.displayDrive()
-        size = int(clientSocket.recv(10).decode('utf-8'))
-        clientSocket.send("OK".encode('utf-8'))
-        buffer = "".encode("utf-8")
-        while size > 0:
-               data = clientSocket.recv(4096)
-               size -= len(data)
-               buffer += data
-        self.tab3.serverPath = ""
-        self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
-        self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
-        self.tab3.serverPathtxt.configure(state="normal")
-        self.tab3.serverPathtxt.delete('1.0', END)
-        self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+        #if self.FTPStart == True:
+            self.displayDrive()
+            size = int(clientSocket.recv(10).decode('utf-8'))
+            clientSocket.send("OK".encode('utf-8'))
+            buffer = "".encode("utf-8")
+            while size > 0:
+                data = clientSocket.recv(4096)
+                size -= len(data)
+                buffer += data
+            self.tab3.serverPath = ""
+            self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+            self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
+            self.tab3.serverPathtxt.configure(state="normal")
+            self.tab3.serverPathtxt.delete('1.0', END)
+            self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
+            self.FTPStart = False    
 
     def butClientPreviousPathClick(self, event = None):
         l = len(self.tab3.clientPath)
@@ -573,6 +583,8 @@ class Client(tk.Frame):
         self.tab3.serverPathtxt.configure(state="disabled")
 
     def clientOnDoubleClick(self, event = None):
+        if self.tab3.tv1.selection() == ():
+            return
         item = self.tab3.tv1.selection()[0]
         folderName = self.tab3.tv1.item(item,"value")[0]
         self.tab3.clientPath = os.path.join(self.tab3.clientPath,folderName)
@@ -585,6 +597,8 @@ class Client(tk.Frame):
 
     def serverOnDoubleClick(self, event = None):
         if not self.checkConnected():
+            return
+        if self.tab3.tv2.selection() == ():
             return
         s = "view"
         clientSocket.send(s.encode('utf-8'))
@@ -633,9 +647,10 @@ class Client(tk.Frame):
             return
         s = "delete"
         clientSocket.send(s.encode('utf-8'))
-        info = self.tab3.popup1.selection["1"]
+        info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
         serverPath,tail = os.path.split(self.tab3.serverPath)
+        print(tail)
         self.serverViewFolder(tail)
         
 
@@ -976,6 +991,7 @@ class Client(tk.Frame):
         self.butDisconnect = tk.Button(self.frame0,text = "Disconnect",font=("Lato",10),relief="groove",bg=outbtnbg,fg=outbtnfg,justify="center",cursor="circle")
         self.butDisconnect["command"] = self.butDisconnectClick
         self.butDisconnect.place(x=20, y=580, height=30, width=100)
+        self.butDisconnect.config(state="disabled")
         
         noteBookStyle = ttk.Style(self.frame1)
         noteBookStyle.theme_use('default')
@@ -1245,7 +1261,6 @@ class Client(tk.Frame):
 
 
 
-
     #--------------------TAB5----------------------------------------MAC
         self.tab5 = ttk.Frame(self.tabControl)
         tab5Img = Image.open("Client\\tab5.png")
@@ -1268,6 +1283,8 @@ class Client(tk.Frame):
 
 
 
+
+
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
         tab6Img = Image.open("Client\\tab6.png")
@@ -1282,6 +1299,7 @@ class Client(tk.Frame):
         self.tab6.butShutDown = tk.Button(self.tab6,text = "Shutdown",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab6.butShutDown["command"] = self.butShutDownClick
         self.tab6.butShutDown.place(x=20, y=70, height=30, width=100)
+
 
 
 
@@ -1300,7 +1318,6 @@ class Client(tk.Frame):
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Streaming",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
-
 
 
 

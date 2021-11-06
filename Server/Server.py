@@ -239,11 +239,11 @@ class Server(tk.Frame):
         self.__serverSocket.close()
         
 
-def closeButton(root):
+def CloseButton(root):
     root.destroy()
 
 root = tk.Tk()
-root.protocol('WM_DELETE_WINDOW', lambda: closeButton(root))
+root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
 app = Server(root)
 app.master.title("Server")
 app.master.minsize(210, 100)
