@@ -36,9 +36,9 @@ class MacAddress():
         mac2ipv4 = list(self.getMacAddresses())
         dataToSend = json.dumps(mac2ipv4).encode('utf-8') 
         size = len(dataToSend)
-        self.__client.sendall(str(size).encode('utf-8'))
+        self.__client.send(str(size).encode('utf-8'))
         check = self.__client.recv(10)
-        self.__client.sendall(dataToSend)
+        self.__client.send(dataToSend)
 
 
 

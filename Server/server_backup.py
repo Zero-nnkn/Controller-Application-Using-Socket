@@ -19,7 +19,7 @@ client = None
 ''' TO-DO
 - Phần gửi file reg sửa lại gửi theo size
 - Phần tin nhắn send -> edit ở registry
-- Đổi tất cả send -> sendall
+- Đổi tất cả send -> send
 '''
 
 class Server(tk.Frame):

@@ -1,40 +1,14 @@
 import os
-from posixpath import relpath
+from posixpath import realpath, relpath
 import psutil
 import shutil
 import json
 
-CHUNKSIZE = 1_000_000
+CHUNKSIZE = 100_000_000
 import win32com.client 
-def getFileMetadata(fullPath, metadata):
-    path, filename = os.path.split(fullPath)
-    sh = win32com.client.gencache.EnsureDispatch('Shell.Application', 0)
-    ns = sh.NameSpace(path)
-    file_metadata = dict()
-    item = ns.ParseName(str(filename))
-    for ind, attribute in enumerate(metadata):
-        attr_value = ns.GetDetailsOf(item, ind)
-        if attr_value:
-            file_metadata[attribute] = attr_value
-    print(file_metadata)
-    return file_metadata
 
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
-'''
-path = "C:\\SQL2019"
-def a(path):
-    l = []
-    for root, subfolder, files in os.walk(path):
-        for i in files:
-            dict = getFileMetadata(os.path.join(path,i),METADATA)
-            l.append([dict['Name'], dict['Size'], dict['Item type']])
-        for i in subfolder:
-            l.append([i, '', 'File folder'])
-        break
-    for i in l:
-        print(i)
-a(path)
-'''
+
 
 class FtpController():
     def __init__(self, clientSocket):
@@ -65,9 +39,7 @@ class FtpController():
                     self.currentPath, tail = os.path.split(self.currentPath)
                     self.sendFolderInfo(self.currentPath)
             elif request == "copy2server":
-                info = self.__client.recv(1024).decode("utf-8")
-                fullPath = os.path.join(self.currentPath, info)
-                self.recvData(fullPath)
+                self.recvData(self.currentPath)
             elif request == "copy2client":
                 info = self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
@@ -76,8 +48,10 @@ class FtpController():
                 info = self.__client.recv(1024).decode("utf-8")
                 fullPath = os.path.join(self.currentPath, info)
                 self.deleteData(fullPath)
-            else: #Quit
+            elif request == "quit":
                 return
+            else: #Quit
+                continue
 
     def getFileMetadata(self, fullPath, metadata):
         path, filename = os.path.split(fullPath)
@@ -137,42 +111,46 @@ class FtpController():
             return
 
     def sendData(self, path):
+        head, relpath = os.path.split(path)
         if(os.path.isfile(path)):
-            head, relpath = os.path.split(path)
+            self.__client.send(''.encode())
             self.sendFile(path, relpath)
         elif(os.path.isdir(path)):
+            self.__client.send(realpath.encode())
             self.sendFolder(path)
         else:
             return
+        self.__client.send("DONE".encode())
 
     def recvData(self, path):
-        self.recvFolder(path)
-        '''
-        if(os.path.isfile(path)):
-            self.recvFile(path)
-        elif(os.path.isdir(path)):
+        folderName = self.__client.recv(20).decode()
+        if folderName == '':
             self.recvFolder(path)
         else:
-            return
-        '''
+            tempPath = os.path.join(path,folderName)
+            if os.path.exists(tempPath) == False:
+                os.makedirs(tempPath)
+            self.recvFolder(tempPath)
+        
 
 
     def sendFile(self, fullPath, relpath):
         filesize = os.path.getsize(fullPath)
-        self.__client.sendall(relpath.encode() + b'\n')
-        self.__client.sendall(str(filesize).encode() + b'\n')
+        self.__client.send(relpath.encode())
+        self.__client.send(str(filesize).encode())
 
         # Message when need overwrite, rename or not
-        check = self.__client.recv(10)
+        check = self.__client.recv(10).decode()
+        print("check: ", check)
         if check == "continue":
             with open(fullPath,'rb') as f:
             # Send the file in chunks so large files can be handled.
                 while True:
                     data = f.read(CHUNKSIZE)
                     if not data: break
-                    self.__client.sendall(data)
+                    self.__client.send(data)
         # When duplicate and pause copy
-        else: 
+        else:  #pause
             return
 
     def sendFolder(self, srcPath):
@@ -181,46 +159,54 @@ class FtpController():
                 fullPath = os.path.join(path,file)
                 relpath = os.path.relpath(fullPath,srcPath)
                 
-
                 print(f'Sending {relpath}')
                 self.sendFile(fullPath, relpath)
 
     def recvFolder(self, desPath):
-        with self.__client, self.__client.makefile('rb') as clientfile:
+        #with self.__client, self.__client.makefile('rb') as clientfile:
             while True:
-                raw = clientfile.readline()
-                if not raw: break # no more files, server closed connection.
+                #raw = clientfile.readline()
+                #if not raw: break # no more files, server closed connection.
 
-                filename = raw.strip().decode()
-                length = int(clientfile.readline())
+                filename = self.__client.recv(1024).decode()
+                print(filename)
+                if filename == 'DONE':
+                    break
+                length = int(self.__client.recv(1024).decode())
+
                 print(f'Downloading {filename}...\n  Expecting {length:,} bytes...',end='',flush=True)
 
-                path = os.path.join(desPath,filename)
+                path = os.path.join(desPath, filename)
                 os.makedirs(os.path.dirname(path),exist_ok=True)
 
                 # Check if exists
                 if os.path.exists(path):
-                    self.__client.sendall("exists".encode())
-                    request = self.recv(20).decode()
+                    self.__client.send("exists".encode())
+                    request = self.__client.recv(20).decode()
                     if request == "pause":
+                        print("1")
                         continue
                     elif request == "rename":
                         i = 1
-                        while os.path.exists(path) == True:
-                            dir, fileName = os.path.split(path)
-                            fileName = "Copy {i} of " + fileName 
-                            path = os.path.join(dir, fileName)
+                        dir, fileName = os.path.split(path)
+                        while True:
+                            temp = f"Copy {i} of " + fileName 
+                            temp = os.path.join(dir, temp)
+                            if(os.path.exists(temp) == False):
+                                path = temp
+                                break
                             i += 1
                     else:
                         pass
                 else:
-                    self.__client.sendall("not exists".encode())   
+                    self.__client.send("not exists".encode())   
 
                 # Read the data in chunks so it can handle large files.
                 with open(path,'wb') as f:
                     while length:
+                        #print("len: ",length)
                         chunk = min(length,CHUNKSIZE)
-                        data = clientfile.read(chunk)
+                        data = self.__client.recv(chunk)
                         if not data: break
                         f.write(data)
                         length -= len(data)

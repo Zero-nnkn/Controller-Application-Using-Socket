@@ -23,12 +23,16 @@ import psutil
 import shutil
 import win32com.client
 
+from mySocket import MySocket
+
 PORT = 5000
 PORT_STREAM = 5500
 
 clientSocket = None
 streamSocket = None
 
+IS_STREAM_TAB_FLAG = False
+FLAG_CLOSE = 0
 CHUNKSIZE = 1_000_000
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 
@@ -47,10 +51,6 @@ entryfg = "#0bcdf2"
 txtbg = "black"
 txtfg = "#0bcdf2"
 
-
-
-FLAG_CLOSE = 0
-
 def closeButton(root, FLAG_CLOSE):
     if FLAG_CLOSE == 0:
         closeClient(root)
@@ -68,8 +68,9 @@ def closeClient(root):
 
 def closeStream(root):
     global streamSocket 
-    s = "stop"
-    clientSocket.send(s.encode("utf-8"))
+    if IS_STREAM_TAB_FLAG:
+        s = "stop"
+        clientSocket.send(s.encode("utf-8"))
     streamSocket.stop_server()
     streamSocket = None
     root.destroy()
@@ -161,7 +162,7 @@ class StreamingServer:
             connection, address = self.__server_socket.accept()
 
             self.__block.release()
-            thread = threading.Thread(target=self.__client_connection, args=(connection, address,))
+            thread = threading.Thread(target= self.__client_connection, args=(connection, address,))
             thread.start()
 
     def stop_server(self):
@@ -271,7 +272,7 @@ class Client(tk.Frame):
         test = True
         global clientSocket
         try:
-            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            clientSocket = MySocket(socket.AF_INET, socket.SOCK_STREAM)
             self.host = self.ipConnect.get().strip()
             clientSocket.connect((self.host,PORT))
         except:
@@ -308,6 +309,7 @@ class Client(tk.Frame):
         self.butDisconnect.config(state="disabled")
 
     def on_tab_change(self,event=None):
+        global IS_STREAM_TAB_FLAG
         if  clientSocket == None:
             return
 
@@ -337,10 +339,15 @@ class Client(tk.Frame):
             s = "REGISTRY"
         clientSocket.send(s.encode('utf-8'))
         print(s)
+        if s == "STREAM":
+            IS_STREAM_TAB_FLAG = True
+        else:
+            IS_STREAM_TAB_FLAG = False
         if s == "FTP":
             self.root.geometry("1040x635")
             self.frame1.place(width=900)
             self.gettingStarted()
+            print("1")
         elif s == "STREAM":
             self.root.geometry("1040x635")
             self.frame1.place(width=900)
@@ -578,6 +585,7 @@ class Client(tk.Frame):
                size -= len(data)
                buffer += data
         self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
+
         self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
         self.tab3.serverPathtxt.configure(state="normal")
         self.tab3.serverPathtxt.delete('1.0', END)
@@ -614,9 +622,7 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
-        print("ok")
-        self.recvFolder(self.tab3.clientPath)
-        print("ok2")
+        self.recvData(self.tab3.clientPath)
         self.displayInfo(self.tab3.tv1,self.getFolderInfo(self.tab3.clientPath))
 
     def deleteClientFile(self):
@@ -639,7 +645,6 @@ class Client(tk.Frame):
         s = "copy2server"
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup1.selection["1"]
-        clientSocket.send(info.encode('utf-8'))
         pathSend = os.path.join(self.tab3.clientPath,info)
         self.sendData(pathSend)
         self.viewServerFolder(self.tab3.serverPath)
@@ -651,43 +656,69 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         info = self.tab3.popup2.selection["1"]
         clientSocket.send(info.encode('utf-8'))
-        print(self.tab3.serverPath)
         self.viewServerFolder(self.tab3.serverPath)     
 
     def sendData(self, path):
+        head, relpath = os.path.split(path)
         if(os.path.isfile(path)):
-            head, relpath = os.path.split(path)
+            clientSocket.send(''.encode())
             self.sendFile(path, relpath)
         elif(os.path.isdir(path)):
+            clientSocket.send(relpath.encode())
             self.sendFolder(path)
         else:
             return
+        clientSocket.send("DONE".encode())
+
+    def recvData(self, path):
+        folderName = clientSocket.recv(20).decode()
+        if folderName == '':
+            self.recvFolder(path)
+        else:
+            tempPath = os.path.join(path,folderName)
+            if os.path.exists(tempPath) == False:
+                os.makedirs(tempPath)
+            self.recvFolder(tempPath)   
 
     def sendFile(self, fullPath, relpath):
+        print(relpath)
+        print(fullPath)
         filesize = os.path.getsize(fullPath)
-        clientSocket.sendall(relpath.encode() + b'\n')
-        clientSocket.sendall(str(filesize).encode() + b'\n')
+        print(filesize)
+        clientSocket.send(relpath.encode())
+        clientSocket.send(str(filesize).encode())
 
         # Message when need overwrite, rename or not
-        check = clientSocket.recv(10)
+        check = clientSocket.recv(10).decode()
+        print(check)
 
         if check == "exists":
             request = None
             #----------TO DO----------
             # hiện bảng lựa chọ người dùng muốn overwrite, rename hay hủy copy
             # trả về giá trị request = overwrite/rename/pause
+
+            MsgBox = tk.messagebox.askyesnocancel('File ' + relpath + ' exist',"Yes to overwrite/ No to rename/ Cancel to cancel copy")
+            if MsgBox:
+                request = 'overwrite'
+            elif MsgBox == False:
+                request = 'rename'
+            else:
+                request = 'pause'
+
             #----------TO DO----------
 
-            clientSocket.sendall(request.encode())
+            clientSocket.send(request.encode())
+            if request == 'pause':
+                return
         else: 
             pass
 
-        if request != "pause":
-            with open(fullPath,'rb') as f:
-                while True:
-                    data = f.read(CHUNKSIZE)
-                    if not data: break
-                    clientSocket.sendall(data)
+        with open(fullPath,'rb') as f:
+            while True:
+                data = f.read(CHUNKSIZE)
+                if not data: break
+                clientSocket.send(data)
 
     def sendFolder(self, srcPath):
         for path,subfolder,files in os.walk(srcPath):
@@ -695,18 +726,22 @@ class Client(tk.Frame):
                 fullPath = os.path.join(path,file)
                 relpath = os.path.relpath(fullPath,srcPath)
                 
-
                 print(f'Sending {relpath}')
                 self.sendFile(fullPath, relpath)
 
-    def recvFolder(self, desPath):
-        with clientSocket, clientSocket.makefile('rb') as clientfile:
-            while True:
-                raw = clientfile.readline()
-                if not raw: break # no more files, server closed connection.
 
-                filename = raw.strip().decode()
-                length = int(clientfile.readline())
+    def recvFolder(self, desPath):
+        #with clientSocket, clientSocket.makefile('rb') as clientfile:
+            while True:
+                #raw = clientfile.readline()
+                #if not raw: break # no more files, server closed connection.
+
+                filename = clientSocket.recv(1024).decode()
+                if filename== 'DONE':
+                    break
+                length = int(clientSocket.recv(1024).decode())
+
+
                 print(f'Downloading {filename}...\n  Expecting {length:,} bytes...',end='',flush=True)
 
                 path = os.path.join(desPath,filename)
@@ -714,27 +749,30 @@ class Client(tk.Frame):
 
                 # Check if exists
                 if os.path.exists(path):
-                    clientSocket.sendall("exists".encode())
-                    request = self.recv(20).decode()
-                    if request == "pause":
-                        continue
-                    elif request == "rename":
+                    request = None
+                    MsgBox = tk.messagebox.askyesnocancel('File ' + filename + ' exist',"Yes to overwrite/ No to rename/ Cancel to cancel copy")
+                    if MsgBox:
+                        request = 'continue' #overwrite
+                    elif MsgBox == False:
+                        request = 'continue' #rename
                         i = 1
                         while os.path.exists(path) == True:
                             dir, fileName = os.path.split(path)
-                            fileName = "Copy {i} of " + fileName 
+                            fileName = f"Copy {i} of " + fileName 
                             path = os.path.join(dir, fileName)
                             i += 1
                     else:
-                        pass
+                        request = 'pause'
+
+                    clientSocket.send(request.encode())
                 else:
-                    clientSocket.sendall("not exists".encode())   
+                    clientSocket.send("continue".encode())   
 
                 # Read the data in chunks so it can handle large files.
                 with open(path,'wb') as f:
                     while length:
                         chunk = min(length,CHUNKSIZE)
-                        data = clientfile.read(chunk)
+                        data = clientSocket.recv(chunk)
                         if not data: break
                         f.write(data)
                         length -= len(data)

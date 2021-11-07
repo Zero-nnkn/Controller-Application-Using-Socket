@@ -69,7 +69,6 @@ class StreamingClient:
             elif request == "stop":
                 self.stop_stream()
             else:
-                self.stop_stream()
                 return
                 
 
@@ -107,7 +106,7 @@ class StreamingClient:
             size = len(data)
 
             try:
-                self.__client_socket.sendall(struct.pack('>L', size) + data)
+                self.__client_socket.send(struct.pack('>L', size) + data)
             except:
                 self.__running = False
 

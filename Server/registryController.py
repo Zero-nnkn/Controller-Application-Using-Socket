@@ -38,20 +38,20 @@ class RegistryController():
             test = False    
         if test: s = "Successful edit"
         else: s = "Edit failure"
-        self.__client.sendall(s.encode("utf-8"))
+        self.__client.send(s.encode("utf-8"))
 
     def editReg(self):
         option = self.__client.recv(1024).decode("utf-8")
-        self.__client.sendall("OK".encode("utf-8"))
+        self.__client.send("OK".encode("utf-8"))
 
         link = self.__client.recv(1024).decode("utf-8")
-        self.__client.sendall("OK".encode("utf-8"))
+        self.__client.send("OK".encode("utf-8"))
 
         valueName = self.__client.recv(1024).decode("utf-8")
-        self.__client.sendall("OK".encode("utf-8"))
+        self.__client.send("OK".encode("utf-8"))
 
         value = self.__client.recv(1024).decode("utf-8")
-        self.__client.sendall("OK".encode("utf-8"))
+        self.__client.send("OK".encode("utf-8"))
 
         typeValue = self.__client.recv(1024).decode("utf-8")
 
@@ -82,7 +82,7 @@ class RegistryController():
         else:
             s = "Error"
         
-        self.__client.sendall(s.encode("utf-8"))
+        self.__client.send(s.encode("utf-8"))
 
 
     def baseRegistryKey(self,link):

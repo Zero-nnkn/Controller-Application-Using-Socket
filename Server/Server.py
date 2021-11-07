@@ -7,6 +7,7 @@ import subprocess
 import sys
 import ctypes
 
+from mySocket import MySocket
 import appController
 import processController
 import ftpController
@@ -188,7 +189,7 @@ class Server(tk.Frame):
         self.keyController.startListening()
         
     def buttonClick(self):
-        self.__serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.__serverSocket = MySocket(socket.AF_INET, socket.SOCK_STREAM)
         self.__serverSocket.bind((self.__host, self.__port))
         self.__serverSocket.listen(5)
         print("Waiting for connection...")
