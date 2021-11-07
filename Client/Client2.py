@@ -871,8 +871,6 @@ class Client(tk.Frame):
 
 
 
-
-
     #--------------------TAB6 POWER----------------------------------------
     def butLogOutClick(self,event=None):
         if not self.checkConnected():
@@ -891,7 +889,6 @@ class Client(tk.Frame):
 
 
 
-
     #--------------------TAB7 STREAM----------------------------------------
     def butStartRecording(self):
         global streamSocket
@@ -906,7 +903,6 @@ class Client(tk.Frame):
         streamSocket.start_server()  
  
         clientSocket.send("stream".encode())      
-
 
 
 
@@ -943,31 +939,26 @@ class Client(tk.Frame):
 
     def butSend2Click(self, event = None):
         s = "edit"
-        print(s)
         clientSocket.send(s.encode('utf-8'))
 
-        s = self.tab8.box1.get().strip()
-        clientSocket.send(s.encode('utf-8'))
-        check = clientSocket.recv(10)
+        option = self.tab8.box1.get().strip()
+        clientSocket.send(option.encode('utf-8'))
 
-        s = self.tab8.Path2.get("1.0", END).strip()
-        clientSocket.send(s.encode('utf-8'))
-        check = clientSocket.recv(10)
+        link = self.tab8.Path2.get("1.0", END).strip()
+        clientSocket.send(link.encode('utf-8'))
 
-        s = self.tab8.Name.get("1.0", END).strip()
-        clientSocket.send(s.encode('utf-8'))
-        check = clientSocket.recv(10)
+        valueName = self.tab8.Name.get("1.0", END).strip()
+        clientSocket.send(valueName.encode('utf-8'))
 
-        s = self.tab8.Value.get("1.0", END).strip()
-        clientSocket.send(s.encode('utf-8'))
-        check = clientSocket.recv(10)
+        value = self.tab8.Value.get("1.0", END).strip()
+        clientSocket.send(value.encode('utf-8'))
 
-        s = self.tab8.box2.get().strip()
-        clientSocket.send(s.encode('utf-8'))
+        typeValue = self.tab8.box2.get().strip()
+        clientSocket.send(typeValue.encode('utf-8'))
 
         message = clientSocket.recv(1024).decode('utf-8')
         self.tab8.resView.config(state = "normal")
-        self.tab8.resView.insert(END, message + "\n")
+        self.tab8.resView.insert(END, f"{option}: {message}" + "\n")
         self.tab8.resView.config(state = "disable")
 
     def butDelClick(self, event = None):
@@ -1412,7 +1403,7 @@ class Client(tk.Frame):
         func = ('Get value', 'Set value', 'Delete value', 'Create key', 'Delete key')
         self.tab8.func = tk.StringVar()
         self.tab8.func.set("Choose function")
-        self.tab8.box1 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.func)
+        self.tab8.box1 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.func, state='readonly')
         self.tab8.box1['values'] = func
         self.tab8.box1.place(x=20, y=10, height = 30, width=435)
         self.tab8.box1.bind('<<ComboboxSelected>>', self.chooseFunc)
@@ -1432,7 +1423,7 @@ class Client(tk.Frame):
         dataType = ('String', 'Binary', 'DWORD', 'QWORD', 'Multi-String', 'Expandable String')
         self.tab8.dataType = tk.StringVar()
         self.tab8.dataType.set("Data 's type")
-        self.tab8.box2 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.dataType)
+        self.tab8.box2 = ttk.Combobox(self.tab8.frame1, textvariable=self.tab8.dataType, state='readonly')
         self.tab8.box2['values'] = dataType
         self.tab8.box2.place(x=326, y=100, height = 30, width=129)
 

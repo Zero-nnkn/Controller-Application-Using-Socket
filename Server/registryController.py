@@ -42,25 +42,24 @@ class RegistryController():
 
     def editReg(self):
         option = self.__client.recv(1024).decode("utf-8")
-        self.__client.send("OK".encode("utf-8"))
+        print("option:", option)
 
         link = self.__client.recv(1024).decode("utf-8")
-        self.__client.send("OK".encode("utf-8"))
+        print("link:", link)
 
         valueName = self.__client.recv(1024).decode("utf-8")
-        self.__client.send("OK".encode("utf-8"))
+        print("value:", valueName)
 
         value = self.__client.recv(1024).decode("utf-8")
-        self.__client.send("OK".encode("utf-8"))
+        print("value:", value)
 
         typeValue = self.__client.recv(1024).decode("utf-8")
+        print("typevalue:", typeValue)
 
         s = None
         aKey = self.baseRegistryKey(link)
         subKey = self.subKey(link)
-        print(aKey)
-        print(subKey)
-        
+
         if option == "Create key":
             try:
                 winreg.CreateKey(aKey,subKey)
