@@ -756,8 +756,8 @@ class Client(tk.Frame):
                 os.makedirs(os.path.dirname(path),exist_ok=True)
 
                 # Check if exists
+                request = 'continue'
                 if os.path.exists(path):
-                    request = None
                     MsgBox = tk.messagebox.askyesnocancel('File ' + filename + ' exist',"Yes to overwrite/ No to rename/ Cancel to cancel copy")
                     if MsgBox:
                         request = 'continue' #overwrite
@@ -776,6 +776,8 @@ class Client(tk.Frame):
                 else:
                     clientSocket.send("continue".encode())   
 
+                if request == 'pause':
+                    continue
                 # Read the data in chunks so it can handle large files.
                 with open(path,'wb') as f:
                     while length:

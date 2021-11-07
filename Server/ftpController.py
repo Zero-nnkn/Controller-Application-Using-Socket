@@ -116,7 +116,7 @@ class FtpController():
             self.__client.send(''.encode())
             self.sendFile(path, relpath)
         elif(os.path.isdir(path)):
-            self.__client.send(realpath.encode())
+            self.__client.send(relpath.encode())
             self.sendFolder(path)
         else:
             return
@@ -184,7 +184,6 @@ class FtpController():
                     self.__client.send("exists".encode())
                     request = self.__client.recv(20).decode()
                     if request == "pause":
-                        print("1")
                         continue
                     elif request == "rename":
                         i = 1
