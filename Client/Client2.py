@@ -304,6 +304,7 @@ class Client(tk.Frame):
         for i in range(0,8):
                 self.tabControl.tab(i,state="disabled")
         self.firstChanged = True
+        self.FTPStart = True
         self.butConnect.config(state="normal")
         self.butDisconnect.config(state="disabled")
 
@@ -315,10 +316,11 @@ class Client(tk.Frame):
             clientSocket.send("quit".encode('utf-8'))
         else: self.firstChanged = False
 
-        self.root.geometry("740x635")
-        self.frame1.place(width=600)
+        self.root.geometry("745x635")
+        self.frame1.place(width=605)
 
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        s = ""
         if tabName == "APPS\nCONTROLLER":
             s = "APP"
         elif tabName == "PROCESSES\nCONTROLLER":
@@ -338,12 +340,12 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         print(s)
         if s == "FTP":
-            self.root.geometry("1040x635")
-            self.frame1.place(width=900)
+            self.root.geometry("1045x635")
+            self.frame1.place(width=905)
             self.gettingStarted()
         elif s == "STREAM":
-            self.root.geometry("1040x635")
-            self.frame1.place(width=900)
+            self.root.geometry("1045x635")
+            self.frame1.place(width=905)
             
 
 
@@ -523,7 +525,8 @@ class Client(tk.Frame):
             self.tab3.serverPathtxt.configure(state="normal")
             self.tab3.serverPathtxt.delete('1.0', END)
             self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
-            self.FTPStart = False    
+            self.FTPStart = False
+        #else: self.viewServerFolder(self.tab3.serverPath)    
 
     def butClientPreviousPathClick(self, event = None):
         l = len(self.tab3.clientPath)
@@ -567,6 +570,7 @@ class Client(tk.Frame):
         if not self.checkConnected():
             return
         s = "view"
+        print(serverPath)
         print(1)
         clientSocket.send(s.encode('utf-8'))
         print(2)
