@@ -43,7 +43,7 @@ class Server(tk.Frame):
         self.frame0 = tk.Frame(self,background=appbg)
         self.frame0.place(x=0, y=0, height=140, width=220)
 
-        img = Image.open("Server\\logo.png")
+        img = Image.open("logo.png")
         print(img.size)
         img =img.resize((60,100))
         self.img=ImageTk.PhotoImage(img)
