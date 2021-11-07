@@ -254,7 +254,7 @@ class Client(tk.Frame):
     def __init__(self, root):
             super(Client, self).__init__()
             self.root=root
-            self.root.title("SUPER CONTROLER")
+            self.root.title("SUPER CONTROLLER")
             self.root.geometry("740x635")
             self.root.resizable(False,False)
             self.root.grab_set()
@@ -305,6 +305,7 @@ class Client(tk.Frame):
         for i in range(0,8):
                 self.tabControl.tab(i,state="disabled")
         self.firstChanged = True
+        self.FTPStart = True
         self.butConnect.config(state="normal")
         self.butDisconnect.config(state="disabled")
 
@@ -317,25 +318,26 @@ class Client(tk.Frame):
             clientSocket.send("quit".encode('utf-8'))
         else: self.firstChanged = False
 
-        self.root.geometry("740x635")
-        self.frame1.place(width=600)
+        self.root.geometry("745x635")
+        self.frame1.place(width=605)
 
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        s = ""
+        if tabName == "APPS\nCONTROLLER":
             s = "APP"
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             s = "PROCESS"
-        elif tabName == "FTP\nCONTROLER":
+        elif tabName == "FTP\nCONTROLLER":
             s = "FTP"
-        elif tabName == "KEYBOARD\nCONTROLER":
+        elif tabName == "KEYBOARD\nCONTROLLER":
             s = "KEYBOARD"
-        elif tabName == "MAC\n   ADDRESS  ":
+        elif tabName == "MAC\n    ADDRESS    ":
             s = "MACADDRESS"
-        elif tabName == "POWER\nCONTROLER":
+        elif tabName == "POWER\nCONTROLLER":
             s = "POWER"
-        elif tabName == "STREAMING\nCONTROLER":
+        elif tabName == "STREAMING\nCONTROLLER":
             s = "STREAM"
-        elif tabName == "REGISTRY\nCONTROLER":
+        elif tabName == "REGISTRY\nCONTROLLER":
             s = "REGISTRY"
         clientSocket.send(s.encode('utf-8'))
         print(s)
@@ -344,13 +346,13 @@ class Client(tk.Frame):
         else:
             IS_STREAM_TAB_FLAG = False
         if s == "FTP":
-            self.root.geometry("1040x635")
-            self.frame1.place(width=900)
+            self.root.geometry("1045x635")
+            self.frame1.place(width=905)
             self.gettingStarted()
             print("1")
         elif s == "STREAM":
-            self.root.geometry("1040x635")
-            self.frame1.place(width=900)
+            self.root.geometry("1045x635")
+            self.frame1.place(width=905)
             
 
 
@@ -360,9 +362,9 @@ class Client(tk.Frame):
     #--------------------TAB1 2 APP PROCESS----------------------------------------
     def doTab12Popup(self,event):
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        if tabName == "APPS\nCONTROLLER":
             tab = self.tab1
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             tab = self.tab2
         try:
             tab.popup.selection = tab.tv1.set(tab.tv1.identify_row(event.y))
@@ -376,9 +378,9 @@ class Client(tk.Frame):
         s = "kill"
         clientSocket.send(s.encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        if tabName == "APPS\nCONTROLLER":
             id = self.tab1.popup.selection
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             id = self.tab2.popup.selection
         if id == {}: return
         clientSocket.send(id["2"].encode('utf-8'))
@@ -404,9 +406,9 @@ class Client(tk.Frame):
         size = int(clientSocket.recv(10).decode('utf-8'))
         clientSocket.send("OK".encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        if tabName == "APPS\nCONTROLLER":
             tab = self.tab1
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             tab = self.tab2
         tab.data = []
         buffer = "".encode("utf-8")
@@ -426,9 +428,9 @@ class Client(tk.Frame):
         s = "kill"
         clientSocket.send(s.encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        if tabName == "APPS\nCONTROLLER":
             tab = self.tab1
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             tab = self.tab2
         s = tab.killID.get().strip()
         clientSocket.send(s.encode('utf-8'))
@@ -446,9 +448,9 @@ class Client(tk.Frame):
         s = "start"
         clientSocket.send(s.encode('utf-8'))
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
-        if tabName == "APPS\nCONTROLER":
+        if tabName == "APPS\nCONTROLLER":
             tab = self.tab1
-        elif tabName == "PROCESSES\nCONTROLER":
+        elif tabName == "PROCESSES\nCONTROLLER":
             tab = self.tab2
         s = tab.startID.get().strip()
         clientSocket.send(s.encode('utf-8'))
@@ -530,7 +532,8 @@ class Client(tk.Frame):
             self.tab3.serverPathtxt.configure(state="normal")
             self.tab3.serverPathtxt.delete('1.0', END)
             self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
-            self.FTPStart = False    
+            self.FTPStart = False
+        #else: self.viewServerFolder(self.tab3.serverPath)    
 
     def butClientPreviousPathClick(self, event = None):
         l = len(self.tab3.clientPath)
@@ -574,18 +577,23 @@ class Client(tk.Frame):
         if not self.checkConnected():
             return
         s = "view"
+        print(serverPath)
+        print(1)
         clientSocket.send(s.encode('utf-8'))
+        print(2)
         self.tab3.serverPath = serverPath
         clientSocket.send(self.tab3.serverPath.encode('utf-8'))
+        print(3)
         size = int(clientSocket.recv(10).decode('utf-8'))
+        print(4)
         clientSocket.send("OK".encode('utf-8'))
+        print(5)
         buffer = "".encode("utf-8")
         while size > 0:
                data = clientSocket.recv(4096)
                size -= len(data)
                buffer += data
         self.tab3.serverInfos = json.loads(buffer.decode("utf-8"))
-
         self.displayInfo(self.tab3.tv2,self.tab3.serverInfos)
         self.tab3.serverPathtxt.configure(state="normal")
         self.tab3.serverPathtxt.delete('1.0', END)
@@ -1056,7 +1064,7 @@ class Client(tk.Frame):
         tab1Img = Image.open("Client\\tab1.png")
         tab1Img = tab1Img.resize((40,40))
         self.tab1.img = ImageTk.PhotoImage(tab1Img)
-        self.tabControl.add(self.tab1,text="APPS\nCONTROLER",image=self.tab1.img,compound=tk.TOP)
+        self.tabControl.add(self.tab1,text="APPS\nCONTROLLER",image=self.tab1.img,compound=tk.TOP)
 
 
         self.tab1.frame0 = tk.Frame(self.tab1,background=appbg)
@@ -1115,7 +1123,7 @@ class Client(tk.Frame):
         tab2Img = Image.open("Client\\tab2.png")
         tab2Img = tab2Img.resize((40,40))
         self.tab2.img = ImageTk.PhotoImage(tab2Img)
-        self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLER",image=self.tab2.img,compound=tk.TOP) 
+        self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLLER",image=self.tab2.img,compound=tk.TOP) 
 
         self.tab2.frame0 = tk.Frame(self.tab2,background=appbg)
         self.tab2.frame0.place(x=20, y=20, height=495, width=480)
@@ -1173,7 +1181,7 @@ class Client(tk.Frame):
         tab3Img = Image.open("Client\\tab3.png")
         tab3Img = tab3Img.resize((40,40))
         self.tab3.img = ImageTk.PhotoImage(tab3Img)
-        self.tabControl.add(self.tab3,text="FTP\nCONTROLER",image=self.tab3.img,compound=tk.TOP)
+        self.tabControl.add(self.tab3,text="FTP\nCONTROLLER",image=self.tab3.img,compound=tk.TOP)
 
         self.tab3.label1 = Label(self.tab3,text="LOCAL",font=("Lato",10,BOLD),relief="groove",bg=txtbg,fg=txtfg)
         self.tab3.label1.place(x=20,y=20,height=30,width=380)
@@ -1262,7 +1270,7 @@ class Client(tk.Frame):
         tab4Img = Image.open("Client\\tab4.png")
         tab4Img = tab4Img.resize((40,40))
         self.tab4.img = ImageTk.PhotoImage(tab4Img)
-        self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLER",image=self.tab4.img,compound=tk.TOP)
+        self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLLER",image=self.tab4.img,compound=tk.TOP)
 
         self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butLock["command"] = self.butLockClick
@@ -1304,7 +1312,7 @@ class Client(tk.Frame):
         tab5Img = Image.open("Client\\tab5.png")
         tab5Img = tab5Img.resize((40,40))
         self.tab5.img = ImageTk.PhotoImage(tab5Img)
-        self.tabControl.add(self.tab5,text="MAC\n   ADDRESS  ",image=self.tab5.img,compound=tk.TOP)
+        self.tabControl.add(self.tab5,text="MAC\n    ADDRESS    ",image=self.tab5.img,compound=tk.TOP)
 
         self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
         self.tab5.frame1.place(x=20, y=20, height=525, width=480)
@@ -1328,7 +1336,7 @@ class Client(tk.Frame):
         tab6Img = Image.open("Client\\tab6.png")
         tab6Img = tab6Img.resize((40,40))
         self.tab6.img = ImageTk.PhotoImage(tab6Img)
-        self.tabControl.add(self.tab6,text="POWER\nCONTROLER",image=self.tab6.img,compound=tk.TOP)
+        self.tabControl.add(self.tab6,text="POWER\nCONTROLLER",image=self.tab6.img,compound=tk.TOP)
 
         self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab6.butLogOut["command"] = self.butLogOutClick
@@ -1346,7 +1354,7 @@ class Client(tk.Frame):
         tab7Img = Image.open("Client\\tab7.png")
         tab7Img = tab7Img.resize((40,40))
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
-        self.tabControl.add(self.tab7,text="STREAMING\nCONTROLER",image=self.tab7.img,compound=tk.TOP)
+        self.tabControl.add(self.tab7,text="STREAMING\nCONTROLLER",image=self.tab7.img,compound=tk.TOP)
 
         # self.tab7.main_label = Label(self.tab7)
         # self.tab7.main_label.grid()
@@ -1366,7 +1374,7 @@ class Client(tk.Frame):
         tab8Img = Image.open("Client\\tab8.png")
         tab8Img = tab8Img.resize((40,40))
         self.tab8.img = ImageTk.PhotoImage(tab8Img)
-        self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLER",image=self.tab8.img,compound=tk.TOP)
+        self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLLER",image=self.tab8.img,compound=tk.TOP)
 
         self.tab8.frame = tk.LabelFrame(self.tab8,text="File Path",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
         self.tab8.frame.place(x=20, y=20, height=60, width=350)
@@ -1451,5 +1459,5 @@ class Client(tk.Frame):
 
 root=tk.Tk()
 root.protocol('WM_DELETE_WINDOW', lambda: closeButton(root,0))
-controler=Client(root)
+controller=Client(root)
 root.mainloop()
