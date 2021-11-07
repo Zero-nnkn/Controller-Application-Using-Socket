@@ -1067,7 +1067,7 @@ class Client(tk.Frame):
         tab1Img = tab1Img.resize((40,40))
         self.tab1.img = ImageTk.PhotoImage(tab1Img)
         self.tabControl.add(self.tab1,text="APPS\nCONTROLLER",image=self.tab1.img,compound=tk.TOP)
-
+        tab1Img.close()
 
         self.tab1.frame0 = tk.Frame(self.tab1,background=appbg)
         self.tab1.frame0.place(x=20, y=20, height=495, width=480)
@@ -1126,6 +1126,7 @@ class Client(tk.Frame):
         tab2Img = tab2Img.resize((40,40))
         self.tab2.img = ImageTk.PhotoImage(tab2Img)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLLER",image=self.tab2.img,compound=tk.TOP) 
+        tab2Img.close()
 
         self.tab2.frame0 = tk.Frame(self.tab2,background=appbg)
         self.tab2.frame0.place(x=20, y=20, height=495, width=480)
@@ -1184,6 +1185,7 @@ class Client(tk.Frame):
         tab3Img = tab3Img.resize((40,40))
         self.tab3.img = ImageTk.PhotoImage(tab3Img)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLLER",image=self.tab3.img,compound=tk.TOP)
+        tab3Img.close()
 
         self.tab3.label1 = Label(self.tab3,text="LOCAL",font=("Lato",10,BOLD),relief="groove",bg=txtbg,fg=txtfg)
         self.tab3.label1.place(x=20,y=20,height=30,width=380)
@@ -1273,6 +1275,7 @@ class Client(tk.Frame):
         tab4Img = tab4Img.resize((40,40))
         self.tab4.img = ImageTk.PhotoImage(tab4Img)
         self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLLER",image=self.tab4.img,compound=tk.TOP)
+        tab4Img.close()
 
         self.tab4.butLock = tk.Button(self.tab4, text = "Lock",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab4.butLock["command"] = self.butLockClick
@@ -1315,6 +1318,7 @@ class Client(tk.Frame):
         tab5Img = tab5Img.resize((40,40))
         self.tab5.img = ImageTk.PhotoImage(tab5Img)
         self.tabControl.add(self.tab5,text="MAC\n    ADDRESS    ",image=self.tab5.img,compound=tk.TOP)
+        tab5Img.close()
 
         self.tab5.frame1 = tk.LabelFrame(self.tab5, text="MAC Address",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
         self.tab5.frame1.place(x=20, y=20, height=525, width=480)
@@ -1339,6 +1343,7 @@ class Client(tk.Frame):
         tab6Img = tab6Img.resize((40,40))
         self.tab6.img = ImageTk.PhotoImage(tab6Img)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLLER",image=self.tab6.img,compound=tk.TOP)
+        tab6Img.close()
 
         self.tab6.butLogOut = tk.Button(self.tab6,text = "Log out",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab6.butLogOut["command"] = self.butLogOutClick
@@ -1357,6 +1362,7 @@ class Client(tk.Frame):
         tab7Img = tab7Img.resize((40,40))
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLLER",image=self.tab7.img,compound=tk.TOP)
+        tab7Img.close()
 
         # self.tab7.main_label = Label(self.tab7)
         # self.tab7.main_label.grid()
@@ -1377,6 +1383,7 @@ class Client(tk.Frame):
         tab8Img = tab8Img.resize((40,40))
         self.tab8.img = ImageTk.PhotoImage(tab8Img)
         self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLLER",image=self.tab8.img,compound=tk.TOP)
+        tab8Img.close()
 
         self.tab8.frame = tk.LabelFrame(self.tab8,text="File Path",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
         self.tab8.frame.place(x=20, y=20, height=60, width=350)

@@ -1,7 +1,7 @@
 import socket
 import tkinter as tk
 import os, signal
-from PIL import ImageGrab
+from PIL import Image, ImageGrab, ImageTk
 import json
 import subprocess
 import sys
@@ -20,6 +20,10 @@ import streamingClient
 PORT = 5000
 PORT_STREAM = 5500
 
+appbg = "#232631"
+btnbg = "#141414"
+btnfg = "white"
+
 class Server(tk.Frame):
     def __init__(self, master = None):
         self.__running = False
@@ -27,17 +31,30 @@ class Server(tk.Frame):
         self.__port = PORT
         self.__portStream = PORT_STREAM
         self.__client = None
-
+        
         super().__init__(master)
         self.pack(fill="both", expand=True)
+        self.master.resizable(False,False)
         self.createWidgets()
 
     #DESIGN
-    def createWidgets(self):      
+    def createWidgets(self):
+
+        self.frame0 = tk.Frame(self,background=appbg)
+        self.frame0.place(x=0, y=0, height=140, width=220)
+
+        img = Image.open("Server\\logo.png")
+        print(img.size)
+        img =img.resize((60,100))
+        self.img=ImageTk.PhotoImage(img)
+        self.theme=tk.Label(self.frame0,image=self.img,background=appbg)
+        self.theme.place(x=20, y=20)
+        img.close()
+
         #Button1
-        self.butConnect = tk.Button(self,text = "Open server", relief="groove")
+        self.butConnect = tk.Button(self.frame0,text = "Open server",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.butConnect["command"] = self.buttonClick
-        self.butConnect.place(x=50, y=15, height=70, width=100) 
+        self.butConnect.place(x=100, y=20, height=100, width=100) 
 
     def Shutdown(self):
         os.system("shutdown /s /t 60")
@@ -265,5 +282,5 @@ root = tk.Tk()
 root.protocol('WM_DELETE_WINDOW', lambda: CloseButton(root))
 app = Server(root)
 app.master.title("Server")
-app.master.minsize(210, 100)
+app.master.minsize(220, 140)
 app.mainloop()
