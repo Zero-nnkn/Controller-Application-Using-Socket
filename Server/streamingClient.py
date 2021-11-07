@@ -101,6 +101,7 @@ class StreamingClient:
         self.__client_socket.connect((self.__host, self.__port))
         while self.__running:
             frame = self._get_frame()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             result, frame = cv2.imencode('.jpg', frame, self.__encoding_parameters)
             data = pickle.dumps(frame, 0)
             size = len(data)

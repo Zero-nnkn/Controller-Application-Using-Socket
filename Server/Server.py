@@ -19,6 +19,7 @@ import streamingClient
 
 PORT = 5000
 PORT_STREAM = 5500
+PORT_FTP = 5999
 
 appbg = "#232631"
 btnbg = "#141414"
@@ -30,6 +31,7 @@ class Server(tk.Frame):
         self.__host = ''
         self.__port = PORT
         self.__portStream = PORT_STREAM
+        self.__portFTP = PORT_FTP
         self.__client = None
         
         super().__init__(master)
@@ -44,7 +46,6 @@ class Server(tk.Frame):
         self.frame0.place(x=0, y=0, height=140, width=220)
 
         img = Image.open("logo.png")
-        print(img.size)
         img =img.resize((60,100))
         self.img=ImageTk.PhotoImage(img)
         self.theme=tk.Label(self.frame0,image=self.img,background=appbg)
@@ -208,13 +209,13 @@ class Server(tk.Frame):
     def buttonClick(self):
         self.__serverSocket = MySocket(socket.AF_INET, socket.SOCK_STREAM)
         self.__serverSocket.bind((self.__host, self.__port))
-        self.__serverSocket.listen(5)
+        self.__serverSocket.listen(1)
         print("Waiting for connection...")
         self.__client, addr = self.__serverSocket.accept()
 
         self.appController = appController.AppController(self.__client)
         self.processController = processController.ProcessController(self.__client)
-        self.ftpController = ftpController.FtpController(self.__client)
+        self.ftpController = ftpController.FtpController(self.__client, addr[0], self.__portFTP)
         self.keyboardController = keyboardController.KeyboardController(self.__client)
         self.macAddress = macAddress.MacAddress(self.__client)
         self.powerController = powerController.PowerController(self.__client)

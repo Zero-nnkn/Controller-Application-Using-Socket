@@ -1,17 +1,22 @@
 import os
 from posixpath import realpath, relpath
+import socket
 import psutil
 import shutil
 import json
+from mySocket import MySocket
 
-CHUNKSIZE = 100_000_000
+CHUNKSIZE = 1024*1024
 import win32com.client 
 
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 
 
 class FtpController():
-    def __init__(self, clientSocket):
+    def __init__(self, clientSocket, host, port):
+        self.__host = host
+        self.__port = port
+        print(port)
         self.__client = clientSocket
         self.currentPath = "\\"
         self.info = []
@@ -111,30 +116,41 @@ class FtpController():
             return
 
     def sendData(self, path):
+        ftpClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ftpClient.connect((self.__host, self.__port))
+
         head, relpath = os.path.split(path)
         if(os.path.isfile(path)):
             self.__client.send(''.encode())
-            self.sendFile(path, relpath)
+            self.sendFile(ftpClient, path, relpath)
         elif(os.path.isdir(path)):
             self.__client.send(relpath.encode())
-            self.sendFolder(path)
+            self.sendFolder(ftpClient, path)
         else:
             return
         self.__client.send("DONE".encode())
+        
+        ftpClient.close()
 
     def recvData(self, path):
+        serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serverSock.bind(("", self.__port))
+        serverSock.listen(1)
+        clientSock, addr = serverSock.accept()
+
         folderName = self.__client.recv(20).decode()
         if folderName == '':
-            self.recvFolder(path)
+            self.recvFolder(clientSock, path)
         else:
             tempPath = os.path.join(path,folderName)
             if os.path.exists(tempPath) == False:
                 os.makedirs(tempPath)
-            self.recvFolder(tempPath)
-        
+            self.recvFolder(clientSock, tempPath)
+        serverSock.close()
+        clientSock.close()
 
 
-    def sendFile(self, fullPath, relpath):
+    def sendFile(self, ftpClient, fullPath, relpath):
         filesize = os.path.getsize(fullPath)
         self.__client.send(relpath.encode())
         self.__client.send(str(filesize).encode())
@@ -148,21 +164,21 @@ class FtpController():
                 while True:
                     data = f.read(CHUNKSIZE)
                     if not data: break
-                    self.__client.send(data)
+                    ftpClient.send(data)
         # When duplicate and pause copy
         else:  #pause
             return
 
-    def sendFolder(self, srcPath):
+    def sendFolder(self, ftpClient, srcPath):
         for path,subfolder,files in os.walk(srcPath):
             for file in files:
                 fullPath = os.path.join(path,file)
                 relpath = os.path.relpath(fullPath,srcPath)
                 
                 print(f'Sending {relpath}')
-                self.sendFile(fullPath, relpath)
+                self.sendFile(ftpClient, fullPath, relpath)
 
-    def recvFolder(self, desPath):
+    def recvFolder(self, clientSock, desPath):
         #with self.__client, self.__client.makefile('rb') as clientfile:
             while True:
                 #raw = clientfile.readline()
@@ -203,10 +219,11 @@ class FtpController():
                 # Read the data in chunks so it can handle large files.
                 with open(path,'wb') as f:
                     while length:
-                        #print("len: ",length)
+                        print("len: ",length)
                         chunk = min(length,CHUNKSIZE)
-                        data = self.__client.recv(chunk)
-                        if not data: break
+                        data = clientSock.recv(chunk)
+                        if not data: 
+                            break
                         f.write(data)
                         length -= len(data)
                     else: # only runs if while doesn't break and length==0

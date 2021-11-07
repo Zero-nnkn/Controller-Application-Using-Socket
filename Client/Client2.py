@@ -27,13 +27,14 @@ from mySocket import MySocket
 
 PORT = 5000
 PORT_STREAM = 5500
+PORT_FTP = 5999
 
 clientSocket = None
 streamSocket = None
 
 IS_STREAM_TAB_FLAG = False
 FLAG_CLOSE = 0
-CHUNKSIZE = 1_000_000
+CHUNKSIZE = 1024*1024
 METADATA = ['Name', 'Size', 'Item type', 'Date modified', 'Date created']
 
 appbg = "#232631"
@@ -216,7 +217,7 @@ class StreamingServer:
 
             frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
             frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
 
             #----------TO DO----------
             # Thay vì show lên cv2 thì show lên tkinter
@@ -274,7 +275,7 @@ class Client(tk.Frame):
         try:
             clientSocket = MySocket(socket.AF_INET, socket.SOCK_STREAM)
             self.host = self.ipConnect.get().strip()
-            clientSocket.connect((self.host,PORT))
+            clientSocket.connect((self.host, PORT))
         except:
             print ("Fail to connect with the socket-server")
             clientSocket= None
@@ -296,11 +297,12 @@ class Client(tk.Frame):
 
     def butDisconnectClick(self, event = None):
         global clientSocket
-        s = "quit"
-        clientSocket.send(s.encode('utf-8'))
-        s = "EXIT"
-        clientSocket.send(s.encode('utf-8'))
-        clientSocket.close()
+        try:
+            clientSocket.send("quit".encode('utf-8'))
+            clientSocket.send("EXIT".encode('utf-8'))
+            clientSocket.close()
+        except:
+            pass
         clientSocket = None
         for i in range(0,8):
                 self.tabControl.tab(i,state="disabled")
@@ -315,7 +317,11 @@ class Client(tk.Frame):
             return
 
         if self.firstChanged == False:
-            clientSocket.send("quit".encode('utf-8'))
+            try:
+                clientSocket.send("quit".encode('utf-8'))
+            except:
+                messagebox.showwarning("Disconnect", "Lost connection with server")
+                self.butDisconnectClick()
         else: self.firstChanged = False
 
         self.root.geometry("745x635")
@@ -667,28 +673,41 @@ class Client(tk.Frame):
         self.viewServerFolder(self.tab3.serverPath)     
 
     def sendData(self, path):
+        ftpClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ftpClient.connect((self.host, PORT_FTP))
+
         head, relpath = os.path.split(path)
         if(os.path.isfile(path)):
             clientSocket.send(''.encode())
-            self.sendFile(path, relpath)
+            self.sendFile(ftpClient, path, relpath)
         elif(os.path.isdir(path)):
             clientSocket.send(relpath.encode())
-            self.sendFolder(path)
+            self.sendFolder(ftpClient, path)
         else:
             return
         clientSocket.send("DONE".encode())
 
+        ftpClient.close()
+
     def recvData(self, path):
+        serverSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serverSock.bind(('', PORT_FTP))
+        serverSock.listen(1)
+        clientSock, addr = serverSock.accept()
+
         folderName = clientSocket.recv(20).decode()
         if folderName == '':
-            self.recvFolder(path)
+            self.recvFolder(clientSock, path)
         else:
             tempPath = os.path.join(path,folderName)
             if os.path.exists(tempPath) == False:
                 os.makedirs(tempPath)
-            self.recvFolder(tempPath)   
+            self.recvFolder(clientSock, tempPath)   
 
-    def sendFile(self, fullPath, relpath):
+        serverSock.close()
+        clientSock.close()
+
+    def sendFile(self, serverSock, fullPath, relpath):
         print(relpath)
         print(fullPath)
         filesize = os.path.getsize(fullPath)
@@ -725,20 +744,21 @@ class Client(tk.Frame):
         with open(fullPath,'rb') as f:
             while True:
                 data = f.read(CHUNKSIZE)
+                print("len:", len(data))
                 if not data: break
-                clientSocket.send(data)
+                serverSock.send(data)
 
-    def sendFolder(self, srcPath):
+    def sendFolder(self, serverSock, srcPath):
         for path,subfolder,files in os.walk(srcPath):
             for file in files:
                 fullPath = os.path.join(path,file)
                 relpath = os.path.relpath(fullPath,srcPath)
                 
                 print(f'Sending {relpath}')
-                self.sendFile(fullPath, relpath)
+                self.sendFile(serverSock, fullPath, relpath)
 
 
-    def recvFolder(self, desPath):
+    def recvFolder(self, clientSock, desPath):
         #with clientSocket, clientSocket.makefile('rb') as clientfile:
             while True:
                 #raw = clientfile.readline()
@@ -782,7 +802,7 @@ class Client(tk.Frame):
                 with open(path,'wb') as f:
                     while length:
                         chunk = min(length,CHUNKSIZE)
-                        data = clientSocket.recv(chunk)
+                        data = clientSock.recv(chunk)
                         if not data: break
                         f.write(data)
                         length -= len(data)
@@ -801,20 +821,28 @@ class Client(tk.Frame):
     def butLockClick(self):
         if not self.checkConnected():
            return
-        s = "lock"
-        clientSocket.send(s.encode('utf-8'))
+        request = self.tab4.butLock["text"].lower()
+        clientSocket.send(request.encode())
+        if request == "lock":
+            self.tab4.butLock.config(text = "Unlock")
+        else:
+            self.tab4.butLock.config(text = "Lock")
 
     def butHookClick(self):
+        self.tab4.butUnhook.config(state = "normal")
         if not self.checkConnected():
            return
         s = "hook"
         clientSocket.send(s.encode('utf-8'))
+        self.tab4.butHook.config(state = "disabled")
         
     def butUnhookClick(self):
+        self.tab4.butHook.config(state = "normal")
         if not self.checkConnected():
            return
         s = "unhook"
         clientSocket.send(s.encode('utf-8'))
+        self.tab4.butUnhook.config(state = "disabled")
     
     def butPrintClick(self):
         if not self.checkConnected():
@@ -1008,7 +1036,7 @@ class Client(tk.Frame):
         self.frame1 = tk.LabelFrame(self.root,bd=1,background=appbg)
         self.frame1.place(x=140, y=0, height=635, width=900)
 
-        img = Image.open("Client\\logo.png")
+        img = Image.open("logo.png")
         img =img.resize((87,138))
         self.img=ImageTk.PhotoImage(img)
         self.theme=tk.Label(self.frame0,image=self.img,background=appbg)
@@ -1054,7 +1082,7 @@ class Client(tk.Frame):
 
     #--------------------TAB1----------------------------------------APP
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
-        tab1Img = Image.open("Client\\tab1.png")
+        tab1Img = Image.open("tab1.png")
         tab1Img = tab1Img.resize((40,40))
         self.tab1.img = ImageTk.PhotoImage(tab1Img)
         self.tabControl.add(self.tab1,text="APPS\nCONTROLLER",image=self.tab1.img,compound=tk.TOP)
@@ -1113,7 +1141,7 @@ class Client(tk.Frame):
 
     #--------------------TAB2----------------------------------------PROCESS
         self.tab2 = ttk.Frame(self.tabControl)
-        tab2Img = Image.open("Client\\tab2.png")
+        tab2Img = Image.open("tab2.png")
         tab2Img = tab2Img.resize((40,40))
         self.tab2.img = ImageTk.PhotoImage(tab2Img)
         self.tabControl.add(self.tab2,text="PROCESSES\nCONTROLLER",image=self.tab2.img,compound=tk.TOP) 
@@ -1172,7 +1200,7 @@ class Client(tk.Frame):
 
     #--------------------TAB3----------------------------------------FTP
         self.tab3 = ttk.Frame(self.tabControl)
-        tab3Img = Image.open("Client\\tab3.png")
+        tab3Img = Image.open("tab3.png")
         tab3Img = tab3Img.resize((40,40))
         self.tab3.img = ImageTk.PhotoImage(tab3Img)
         self.tabControl.add(self.tab3,text="FTP\nCONTROLLER",image=self.tab3.img,compound=tk.TOP)
@@ -1262,7 +1290,7 @@ class Client(tk.Frame):
 
     #--------------------TAB4----------------------------------------KEYBOARD
         self.tab4 = ttk.Frame(self.tabControl)
-        tab4Img = Image.open("Client\\tab4.png")
+        tab4Img = Image.open("tab4.png")
         tab4Img = tab4Img.resize((40,40))
         self.tab4.img = ImageTk.PhotoImage(tab4Img)
         self.tabControl.add(self.tab4,text="KEYBOARD\nCONTROLLER",image=self.tab4.img,compound=tk.TOP)
@@ -1305,7 +1333,7 @@ class Client(tk.Frame):
 
     #--------------------TAB5----------------------------------------MAC
         self.tab5 = ttk.Frame(self.tabControl)
-        tab5Img = Image.open("Client\\tab5.png")
+        tab5Img = Image.open("tab5.png")
         tab5Img = tab5Img.resize((40,40))
         self.tab5.img = ImageTk.PhotoImage(tab5Img)
         self.tabControl.add(self.tab5,text="MAC\n    ADDRESS    ",image=self.tab5.img,compound=tk.TOP)
@@ -1330,7 +1358,7 @@ class Client(tk.Frame):
 
     #--------------------TAB6----------------------------------------POWER
         self.tab6 = ttk.Frame(self.tabControl)
-        tab6Img = Image.open("Client\\tab6.png")
+        tab6Img = Image.open("tab6.png")
         tab6Img = tab6Img.resize((40,40))
         self.tab6.img = ImageTk.PhotoImage(tab6Img)
         self.tabControl.add(self.tab6,text="POWER\nCONTROLLER",image=self.tab6.img,compound=tk.TOP)
@@ -1349,7 +1377,7 @@ class Client(tk.Frame):
 
     #--------------------TAB7----------------------------------------STREAMING
         self.tab7 = ttk.Frame(self.tabControl)
-        tab7Img = Image.open("Client\\tab7.png")
+        tab7Img = Image.open("tab7.png")
         tab7Img = tab7Img.resize((40,40))
         self.tab7.img = ImageTk.PhotoImage(tab7Img)
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLLER",image=self.tab7.img,compound=tk.TOP)
@@ -1370,7 +1398,7 @@ class Client(tk.Frame):
 
     #--------------------TAB8----------------------------------------STREAMING
         self.tab8 = ttk.Frame(self.tabControl)
-        tab8Img = Image.open("Client\\tab8.png")
+        tab8Img = Image.open("tab8.png")
         tab8Img = tab8Img.resize((40,40))
         self.tab8.img = ImageTk.PhotoImage(tab8Img)
         self.tabControl.add(self.tab8,text="REGISTRY\nCONTROLLER",image=self.tab8.img,compound=tk.TOP)

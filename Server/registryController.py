@@ -27,12 +27,8 @@ class RegistryController():
         test = True
         s = None
         try:
-            #os.startfile("fileReg.reg")
-            path = os.path.realpath(__file__)
-            path = os.path.dirname(path)
-            path = os.path.join(path,"fileReg.reg")
-            k = subprocess.check_output("regedit /s \"" + path + "\"", stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(k)
+            os.system("reg import fileReg.reg")
+            #k = subprocess.check_output(["reg", "import", "fileReg.reg"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         except Exception as E:
             print(E)
             test = False    
