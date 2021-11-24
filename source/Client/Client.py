@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import Label, ttk
 from tkinter import Image, messagebox, filedialog
 from tkinter import END,INSERT
-from tkinter.constants import ANCHOR, CENTER, VERTICAL, Y
+from tkinter.constants import E
 from tkinter.font import BOLD
 
 from PIL import Image
@@ -59,7 +59,6 @@ def closeButton(root, FLAG_CLOSE):
         closeStream(root)
 
 def closeClient(root):
-    print(clientSocket)
     try:
         s = "EXIT"
         clientSocket.send(s.encode("utf-8"))
@@ -70,68 +69,29 @@ def closeClient(root):
 def closeStream(root):
     global streamSocket 
     if IS_STREAM_TAB_FLAG:
-        s = "stop"
-        clientSocket.send(s.encode("utf-8"))
-    streamSocket.stop_server()
+        try:
+            s = "stop"
+            clientSocket.send(s.encode("utf-8"))
+        except:
+            pass
+        
+    try:
+        streamSocket.stop_server()
+    except Exception as E:
+        pass
     streamSocket = None
     root.destroy()
 
 
 class StreamingServer:  
-    """
-    Class for the streaming server.
-    Attributes
-    ----------
-    Private:
-        __host : str
-            host address of the listening server
-        __port : int
-            port on which the server is listening
-        __slots : int
-            amount of maximum avaialable slots (not ready yet)
-        __used_slots : int
-            amount of used slots (not ready yet)
-        __quit_key : chr
-            key that has to be pressed to close connection
-        __running : bool
-            inicates if the server is already running or not
-        __block : Lock
-            a basic lock used for the synchronization of threads
-        __server_socket : socket
-            the main server socket
-    Methods
-    -------
-    Private:
-        __init_socket : method that binds the server socket to the host and port
-        __server_listening: method that listens for new connections
-        __client_connection : main method for processing the client streams
-    Public:
-        start_server : starts the server in a new thread    
-        stop_server : stops the server and closes all connections
-    """
-
-    # TODO: Implement slots functionality
-    def __init__(self, host, port, screen):
-        """
-        Creates a new instance of StreamingServer
-        Parameters
-        ----------
-        host : str
-            host address of the listening server
-        port : int
-            port on which the server is listening
-        slots : int
-            amount of avaialable slots (not ready yet) (default = 8)
-        quit_key : chr
-            key that has to be pressed to close connection (default = 'q')  
-        """
+    def __init__(self, host, port, window, screen):
         self.__host = host
         self.__port = port
         self.__running = False
         self.__block = threading.Lock()
         self.__server_socket = None
+        self.__window = window
         self.__screen = screen
-        #self.__screen.bind('<Configure>', self.resizeImage)
         self.__img = None
         self.__init_socket()
 
@@ -151,6 +111,7 @@ class StreamingServer:
         else:
             self.__running = True
             server_thread = threading.Thread(target=self.__server_listening)
+            server_thread.daemon = True
             server_thread.start()
 
     def __server_listening(self):
@@ -170,14 +131,17 @@ class StreamingServer:
         """
         Stops the server and closes all connections
         """
+    
         if self.__running:
             self.__running = False
             closing_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            closing_connection.connect((self.__host, self.__port))
+            if self.__host == '':
+                closing_connection.connect(("localhost", self.__port))
+            else:   
+                closing_connection.connect((self.__host, self.__port))
             closing_connection.close()
             self.__block.acquire()
             self.__server_socket.close()
-            self.__server_socket = None
             self.__block.release()
         else:
             print("Server not running!")
@@ -194,10 +158,12 @@ class StreamingServer:
             break_loop = False
 
             while len(data) < payload_size:
-                received = connection.recv(4096)
-                if received == b'':
+                try:
+                    received = connection.recv(4096)
+                except:
                     connection.close()
                     break_loop = True
+                    closeStream(self.__window)
                     break
                 data += received
 
@@ -218,32 +184,12 @@ class StreamingServer:
             frame = pickle.loads(frame_data, fix_imports=True, encoding="bytes")
             frame = cv2.imdecode(frame, cv2.IMREAD_COLOR)
 
-
-            #----------TO DO----------
-            # Thay vì show lên cv2 thì show lên tkinter
-            # Tạo 1 cửa sổ mới như lúc call mess
-            # Tắt cửa sổ thì gọi hàm stop_server và gửi "quit"
-            '''
-            cv2.imshow(str(address), frame)
-            if cv2.waitKey(1) == ord(self.__quit_key):
-                connection.close()
-                break
-
-            '''
-
-
-            #self.tab7.root.mainloop() 
             try:
-                #frame = cv2.resize(frame,(self.__screen.winfo_width(), self.__screen.winfo_height()))
                 self.__img = ImageTk.PhotoImage(Image.fromarray(frame))  
                 self.__screen.configure(image=self.__img) 
                 self.__screen.image = self.__img
             except:
                 self.__running = False
-            #self.tab7.main_label.configure(image=img) 
-            #self.tab7.main_label.image = img
-
-            #----------TO DO----------
 
 
 
@@ -290,10 +236,6 @@ class Client(tk.Frame):
             self.butConnect.config(state="disabled")
         else:
             messagebox.showinfo("Error", "Not connected to the server")
-        # for i in range(0,8):
-        #     self.tabControl.tab(i,state="normal")
-        # self.tabControl.select(0)
-        # self.tabControl.bind('<<NotebookTabChanged>>', self.on_tab_change)
 
     def butDisconnectClick(self, event = None):
         global clientSocket
@@ -301,6 +243,7 @@ class Client(tk.Frame):
             clientSocket.send("quit".encode('utf-8'))
             clientSocket.send("EXIT".encode('utf-8'))
             clientSocket.close()
+            clientSocket = None
         except:
             pass
         clientSocket = None
@@ -328,6 +271,7 @@ class Client(tk.Frame):
         self.frame1.place(width=605)
 
         tabName = self.tabControl.tab(self.tabControl.select(),"text")
+        IS_STREAM_TAB_FLAG = False
         s = ""
         if tabName == "APPS\nCONTROLLER":
             s = "APP"
@@ -343,26 +287,21 @@ class Client(tk.Frame):
             s = "POWER"
         elif tabName == "STREAMING\nCONTROLLER":
             s = "STREAM"
+            IS_STREAM_TAB_FLAG = True
         elif tabName == "REGISTRY\nCONTROLLER":
             s = "REGISTRY"
         clientSocket.send(s.encode('utf-8'))
-        print(s)
-        if s == "STREAM":
-            IS_STREAM_TAB_FLAG = True
-        else:
-            IS_STREAM_TAB_FLAG = False
+
         if s == "FTP":
             self.root.geometry("1045x635")
             self.frame1.place(width=905)
             self.gettingStarted()
-            print("1")
         elif s == "STREAM":
             self.root.geometry("1045x635")
             self.frame1.place(width=905)
+        elif s == "KEYBOARD":
+            self.setKeyboardUI()
             
-
-
-
 
 
     #--------------------TAB1 2 APP PROCESS----------------------------------------
@@ -394,7 +333,6 @@ class Client(tk.Frame):
         if not buffer:
             return
         message = buffer.decode('utf-8')
-        print(message)
         messagebox.showinfo("", message,parent = self)
         self.butRefreshClick()
 
@@ -539,7 +477,6 @@ class Client(tk.Frame):
             self.tab3.serverPathtxt.delete('1.0', END)
             self.tab3.serverPathtxt.insert(END,self.tab3.serverPath)
             self.FTPStart = False
-        #else: self.viewServerFolder(self.tab3.serverPath)    
 
     def butClientPreviousPathClick(self, event = None):
         l = len(self.tab3.clientPath)
@@ -583,17 +520,11 @@ class Client(tk.Frame):
         if not self.checkConnected():
             return
         s = "view"
-        print(serverPath)
-        print(1)
         clientSocket.send(s.encode('utf-8'))
-        print(2)
         self.tab3.serverPath = serverPath
         clientSocket.send(self.tab3.serverPath.encode('utf-8'))
-        print(3)
         size = int(clientSocket.recv(10).decode('utf-8'))
-        print(4)
         clientSocket.send("OK".encode('utf-8'))
-        print(5)
         buffer = "".encode("utf-8")
         while size > 0:
                data = clientSocket.recv(4096)
@@ -708,22 +639,15 @@ class Client(tk.Frame):
         clientSock.close()
 
     def sendFile(self, serverSock, fullPath, relpath):
-        print(relpath)
-        print(fullPath)
         filesize = os.path.getsize(fullPath)
-        print(filesize)
         clientSocket.send(relpath.encode())
         clientSocket.send(str(filesize).encode())
 
         # Message when need overwrite, rename or not
         check = clientSocket.recv(10).decode()
-        print(check)
 
         if check == "exists":
             request = None
-            #----------TO DO----------
-            # hiện bảng lựa chọ người dùng muốn overwrite, rename hay hủy copy
-            # trả về giá trị request = overwrite/rename/pause
 
             MsgBox = tk.messagebox.askyesnocancel('File ' + relpath + ' exist',"Yes to overwrite/ No to rename/ Cancel to cancel copy")
             if MsgBox:
@@ -732,8 +656,6 @@ class Client(tk.Frame):
                 request = 'rename'
             else:
                 request = 'pause'
-
-            #----------TO DO----------
 
             clientSocket.send(request.encode())
             if request == 'pause':
@@ -744,7 +666,6 @@ class Client(tk.Frame):
         with open(fullPath,'rb') as f:
             while True:
                 data = f.read(CHUNKSIZE)
-                print("len:", len(data))
                 if not data: break
                 serverSock.send(data)
 
@@ -759,11 +680,7 @@ class Client(tk.Frame):
 
 
     def recvFolder(self, clientSock, desPath):
-        #with clientSocket, clientSocket.makefile('rb') as clientfile:
             while True:
-                #raw = clientfile.readline()
-                #if not raw: break # no more files, server closed connection.
-
                 filename = clientSocket.recv(1024).decode()
                 if filename== 'DONE':
                     break
@@ -818,6 +735,11 @@ class Client(tk.Frame):
 
 
     #--------------------TAB4 KEY----------------------------------------
+    def setKeyboardUI(self):
+        self.tab4.butLock.config(text = "Lock")
+        self.tab4.butUnhook.config(state = "normal")
+        self.tab4.butHook.config(state = "normal")
+
     def butLockClick(self):
         if not self.checkConnected():
            return
@@ -829,19 +751,21 @@ class Client(tk.Frame):
             self.tab4.butLock.config(text = "Lock")
 
     def butHookClick(self):
-        self.tab4.butUnhook.config(state = "normal")
         if not self.checkConnected():
            return
         s = "hook"
         clientSocket.send(s.encode('utf-8'))
+
+        self.tab4.butUnhook.config(state = "normal")
         self.tab4.butHook.config(state = "disabled")
         
     def butUnhookClick(self):
-        self.tab4.butHook.config(state = "normal")
         if not self.checkConnected():
            return
         s = "unhook"
         clientSocket.send(s.encode('utf-8'))
+
+        self.tab4.butHook.config(state = "normal")
         self.tab4.butUnhook.config(state = "disabled")
     
     def butPrintClick(self):
@@ -851,6 +775,8 @@ class Client(tk.Frame):
         clientSocket.send(s.encode('utf-8'))
         buffer = clientSocket.recv(4096).decode('utf-8')
         if not buffer or buffer=="No":
+            self.tab4.butHook.config(state = "normal")
+            self.tab4.butUnhook.config(state = "disabled")
             return
         clientSocket.send("Ok".encode("utf-8"))
         self.tab4.KeyLog = clientSocket.recv(4096).decode("utf-8")
@@ -860,6 +786,9 @@ class Client(tk.Frame):
         self.tab4.KeyView.pack()
         self.tab4.KeyView.config(state="disabled")
         self.tab4.KeyLog = "" 
+
+        self.tab4.butHook.config(state = "normal")
+        self.tab4.butUnhook.config(state = "disabled")
 
     def butDelClick4(self):
         self.tab4.keyLog = ""
@@ -926,8 +855,8 @@ class Client(tk.Frame):
         screen = Label(window)
         window.protocol('WM_DELETE_WINDOW', lambda: closeButton(window,1))
         screen.grid()
-
-        streamSocket = StreamingServer("localhost", PORT_STREAM, screen=screen)
+        assert streamSocket is None
+        streamSocket = StreamingServer('', PORT_STREAM, window=window , screen=screen)
         streamSocket.start_server()  
  
         clientSocket.send("stream".encode())      
@@ -1025,10 +954,6 @@ class Client(tk.Frame):
 
     def createWidgets(self):
         
-
-
-
-
     #--------------------GENERAL----------------------------------------
         self.frame0 = tk.LabelFrame(self.root,bd=1,background=appbg)
         self.frame0.place(x=0, y=0, height=635, width=140)
@@ -1078,7 +1003,6 @@ class Client(tk.Frame):
         
 
         
-
 
     #--------------------TAB1----------------------------------------APP
         self.tab1 = ttk.Frame(self.tabControl,style="TFrame")
@@ -1383,11 +1307,6 @@ class Client(tk.Frame):
         self.tabControl.add(self.tab7,text="STREAMING\nCONTROLLER",image=self.tab7.img,compound=tk.TOP)
         tab7Img.close()
 
-        # self.tab7.main_label = Label(self.tab7)
-        # self.tab7.main_label.grid()
-        # self.tab7.main_label.place(x=20,y=20,height=525,width=780)
-        # self.tab7.main_label.configure(bg="black",bd=2)
-
         self.tab7.butStartRecording = tk.Button(self.tab7,text = "Start Streaming",font=("Lato",10),relief="groove",bg=btnbg,fg=btnfg,justify="center",cursor="circle")
         self.tab7.butStartRecording["command"] = self.butStartRecording
         self.tab7.butStartRecording.place(x=310, y=565, height=50, width=200)
@@ -1396,7 +1315,7 @@ class Client(tk.Frame):
 
 
 
-    #--------------------TAB8----------------------------------------STREAMING
+    #--------------------TAB8----------------------------------------REGIS
         self.tab8 = ttk.Frame(self.tabControl)
         tab8Img = Image.open("tab8.png")
         tab8Img = tab8Img.resize((40,40))
@@ -1415,7 +1334,7 @@ class Client(tk.Frame):
         self.tab8.butBrowse["command"] = self.butBrowseClick
         self.tab8.butBrowse.place(x=400, y=25, height=55, width=100)
 
-        self.tab8.frame0 = tk.LabelFrame(self.tab8,text="File Path",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
+        self.tab8.frame0 = tk.LabelFrame(self.tab8,text="File content",font=("Lato",10),relief="groove",bg=appbg,fg=appfg,cursor="circle")
         self.tab8.frame0.place(x=20, y=100, height=200, width=350)
         self.tab8.Content = tk.Text(self.tab8.frame0,font=("Lato",10),relief="groove",bg=txtbg,fg=txtfg,cursor="circle",insertbackground="white")
         self.tab8.Content.insert(INSERT, "")
@@ -1487,5 +1406,6 @@ class Client(tk.Frame):
 
 root=tk.Tk()
 root.protocol('WM_DELETE_WINDOW', lambda: closeButton(root,0))
+root.iconbitmap(default='clientIcon.ico')
 controller=Client(root)
 root.mainloop()

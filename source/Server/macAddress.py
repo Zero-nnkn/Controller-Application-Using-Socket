@@ -1,5 +1,3 @@
-import ctypes
-from tkinter.constants import NONE
 import psutil
 import socket
 import json

@@ -71,25 +71,3 @@ class AppController():
             s = "Error"
             self.__client.send(s.encode('utf-8'))
 
-'''
-
-import win32con
-import win32gui
-import win32process
-
-def get_hwnds_for_pid ():
-  def callback (hwnd, hwnds):
-    if win32gui.IsWindowVisible (hwnd) and win32gui.IsWindowEnabled (hwnd):
-        _, found_pid = win32process.GetWindowThreadProcessId (hwnd)
-      #if found_pid == pid:
-        name = win32gui.GetWindowText (hwnd)
-        if(name != ""):
-            hwnds.append ((found_pid, name))
-    return True
-    
-  hwnds = []
-  win32gui.EnumWindows (callback, hwnds)
-  return hwnds
-
-print(set(get_hwnds_for_pid()))
-'''

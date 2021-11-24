@@ -63,7 +63,6 @@ class StreamingClient:
             request = self.__client.recv(1024).decode("utf-8")
             if not request:
                 break
-            print(request)
             if request == "stream":
                 self.start_stream()
             elif request == "stop":
@@ -99,6 +98,7 @@ class StreamingClient:
         """
         self.__client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__client_socket.connect((self.__host, self.__port))
+
         while self.__running:
             frame = self._get_frame()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -129,8 +129,11 @@ class StreamingClient:
         """
         Stops client stream if running
         """
-        if self.__running:
+        try:
             self.__client_socket.close()
+        except:
+            pass
+        if self.__running:
             self.__running = False
         else:
             print("Client not streaming!")

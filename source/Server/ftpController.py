@@ -1,5 +1,4 @@
 import os
-from posixpath import realpath, relpath
 import socket
 import psutil
 import shutil

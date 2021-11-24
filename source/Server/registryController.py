@@ -1,5 +1,4 @@
 import winreg
-import subprocess
 import os
 
 class RegistryController():
